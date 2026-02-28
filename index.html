@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>医疗 AI Agent 笔记</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #1e1e2e;
+  --bg-secondary: #181825;
+  --bg-surface: #262637;
+  --text-primary: #cdd6f4;
+  --text-secondary: #a6adc8;
+  --text-muted: #6c7086;
+  --accent: #cba6f7;
+  --accent-hover: #b4befe;
+  --border: #313244;
+  --link: #89b4fa;
+  --link-hover: #b4befe;
+  --code-bg: #1e1e2e;
+  --sidebar-width: 280px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.7;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 侧边栏 */
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 8px 16px 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.sidebar-header h1 {
+  font-size: 16px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.sidebar-header p {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.tree-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.tree-list .tree-list {
+  padding-left: 16px;
+}
+
+.tree-leaf a {
+  display: block;
+  padding: 4px 16px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+}
+
+.tree-leaf a:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.tree-leaf.active a {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: var(--bg-surface);
+}
+
+.folder-name {
+  display: block;
+  padding: 6px 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* 主内容区 */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.breadcrumb {
+  padding: 12px 32px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.breadcrumb a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.back-btn {
+  cursor: pointer;
+  color: var(--link);
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.back-btn:hover {
+  background: var(--bg-surface);
+}
+
+.content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px;
+  width: 100%;
+}
+
+.note-section {
+  display: none;
+}
+
+.note-section.active {
+  display: block;
+}
+
+.note-section h1:first-child {
+  font-size: 28px;
+  color: var(--accent);
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* 排版 */
+h1 { font-size: 24px; margin: 24px 0 12px; color: var(--text-primary); }
+h2 { font-size: 20px; margin: 20px 0 10px; color: var(--text-primary); }
+h3 { font-size: 17px; margin: 16px 0 8px; color: var(--text-primary); }
+
+p { margin: 8px 0; }
+
+strong { color: var(--text-primary); }
+
+a.wikilink {
+  color: var(--link);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--link);
+  cursor: pointer;
+}
+
+a.wikilink:hover {
+  color: var(--link-hover);
+  border-bottom-style: solid;
+}
+
+span.broken-link {
+  color: var(--text-muted);
+  border-bottom: 1px dashed var(--text-muted);
+}
+
+/* 代码 */
+code {
+  background: var(--code-bg);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+  color: #f38ba8;
+  font-family: "SF Mono", "Fira Code", monospace;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+pre code {
+  padding: 0;
+  background: none;
+  color: var(--text-primary);
+}
+
+/* 表格 */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+}
+
+th, td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+th {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* 列表 */
+ul, ol {
+  padding-left: 24px;
+  margin: 8px 0;
+}
+
+li {
+  margin: 4px 0;
+}
+
+/* 图片 */
+.note-image {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 12px 0;
+  border: 1px solid var(--border);
+}
+
+/* 引用 */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 8px 16px;
+  margin: 12px 0;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  border-radius: 0 4px 4px 0;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 24px 0;
+}
+
+/* 菜单按钮（移动端） */
+.menu-toggle {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .menu-toggle {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 999;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main {
+    width: 100%;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .breadcrumb {
+    padding: 12px 16px;
+    padding-left: 52px;
+  }
+}
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h1>医疗 AI Agent</h1>
+    <p>研究笔记 · 23 篇</p>
+  </div>
+  <ul class="tree-list"><li class="tree-folder"><span class="folder-name">rickmind/</span><ul class="tree-list"><li class="tree-leaf" data-slug="医疗agent的实现"><a href="#医疗agent的实现" onclick="showNote('医疗agent的实现')">医疗agent的实现</a></li><li class="tree-leaf" data-slug="医疗agent工具系统"><a href="#医疗agent工具系统" onclick="showNote('医疗agent工具系统')">医疗agent工具系统</a></li><li class="tree-leaf" data-slug="医疗agent记忆系统"><a href="#医疗agent记忆系统" onclick="showNote('医疗agent记忆系统')">医疗agent记忆系统</a></li><li class="tree-leaf" data-slug="医疗agent验证系统"><a href="#医疗agent验证系统" onclick="showNote('医疗agent验证系统')">医疗agent验证系统</a></li><li class="tree-folder"><span class="folder-name">idea/</span><ul class="tree-list"><li class="tree-leaf" data-slug="融入ai的obsidian笔记软件"><a href="#融入ai的obsidian笔记软件" onclick="showNote('融入ai的obsidian笔记软件')">融入ai的obsidian笔记软件</a></li><li class="tree-leaf" data-slug="基于md的连接式记忆系统"><a href="#基于md的连接式记忆系统" onclick="showNote('基于md的连接式记忆系统')">基于md的连接式记忆系统</a></li></ul></li></ul></li><li class="tree-leaf" data-slug="疾病诊断"><a href="#疾病诊断" onclick="showNote('疾病诊断')">疾病诊断</a></li><li class="tree-leaf" data-slug="临床决策支持"><a href="#临床决策支持" onclick="showNote('临床决策支持')">临床决策支持</a></li><li class="tree-leaf" data-slug="症状描述和体征输入"><a href="#症状描述和体征输入" onclick="showNote('症状描述和体征输入')">症状描述和体征输入</a></li><li class="tree-leaf" data-slug="描述症状"><a href="#描述症状" onclick="showNote('描述症状')">描述症状</a></li><li class="tree-leaf" data-slug="NER实体识别与匹配"><a href="#NER实体识别与匹配" onclick="showNote('NER实体识别与匹配')">NER实体识别与匹配</a></li><li class="tree-leaf" data-slug="Tree-of-Thought诊断探索"><a href="#Tree-of-Thought诊断探索" onclick="showNote('Tree-of-Thought诊断探索')">Tree-of-Thought诊断探索</a></li><li class="tree-leaf" data-slug="推荐进一步检查"><a href="#推荐进一步检查" onclick="showNote('推荐进一步检查')">推荐进一步检查</a></li><li class="tree-leaf" data-slug="患者EHR和检查数据获取"><a href="#患者EHR和检查数据获取" onclick="showNote('患者EHR和检查数据获取')">患者EHR和检查数据获取</a></li><li class="tree-leaf" data-slug="提取病史和风险因素"><a href="#提取病史和风险因素" onclick="showNote('提取病史和风险因素')">提取病史和风险因素</a></li><li class="tree-leaf" data-slug="检索指南和相似病例"><a href="#检索指南和相似病例" onclick="showNote('检索指南和相似病例')">检索指南和相似病例</a></li><li class="tree-leaf" data-slug="Chain-of-Thought推理生成决策建议"><a href="#Chain-of-Thought推理生成决策建议" onclick="showNote('Chain-of-Thought推理生成决策建议')">Chain-of-Thought推理生成决策建议</a></li><li class="tree-leaf" data-slug="格式化输出风险评分和治疗方案"><a href="#格式化输出风险评分和治疗方案" onclick="showNote('格式化输出风险评分和治疗方案')">格式化输出风险评分和治疗方案</a></li><li class="tree-leaf" data-slug="Agent Hospital"><a href="#Agent Hospital" onclick="showNote('Agent Hospital')">Agent Hospital</a></li><li class="tree-leaf" data-slug="指南规则引擎"><a href="#指南规则引擎" onclick="showNote('指南规则引擎')">指南规则引擎</a></li><li class="tree-leaf" data-slug="Synthea"><a href="#Synthea" onclick="showNote('Synthea')">Synthea</a></li><li class="tree-leaf" data-slug="常见数据来源与验证方法"><a href="#常见数据来源与验证方法" onclick="showNote('常见数据来源与验证方法')">常见数据来源与验证方法</a></li><li class="tree-leaf" data-slug="obsidian"><a href="#obsidian" onclick="showNote('obsidian')">obsidian</a></li></ul>
+</nav>
+
+<main class="main" id="main">
+  <div class="breadcrumb" id="breadcrumb">
+    <span>选择左侧笔记开始阅读</span>
+  </div>
+  <div class="content" id="content">
+    <section class="note-section" id="医疗agent的实现"><h1>医疗agent的实现</h1><p>agent在医疗场景下的优势：</p>
+<p><strong>主动获取信息而非被动回答。</strong> 纯LLM只能基于你给它的信息做推理。Agent可以主动去查——通过FHIR API调取患者的完整病历、通过PubMed检索最新文献、通过药物数据库查询药物交互。论文Section 1提到的核心动机就是：静态LLM受限于训练数据，而Agent可以"consult clinical databases or calculators rather than guessing dosages"。</p>
+<p><strong>多步迭代而非单次输出。</strong> 疾病诊断不是一问一答的事。Agent可以做到"初步判断→发现信息不足→主动建议做检查→拿到结果→更新判断"这种迭代循环。纯LLM做不到这种跨轮次的状态维护和主动行动。</p>
+<p><strong>精确计算而非近似估算。</strong> 论文Section 2.5.2专门强调了这点，LLM的算术能力很差。在临床中需要计算风险评分、药物剂量、单位换算等，纯LLM的错误率很高。Agent可以调用医学计算器，论文数据显示这能把错误率降低5到13倍。</p>
+<p><strong>记忆和经验积累。</strong> 纯LLM每次对话都是从零开始。Agent的记忆架构（论文Section 2.4详细讨论的五种记忆类型）使得它可以积累经验——记住成功的诊断路径（episodic memory）、复用有效的查询模式（procedural memory）、根据反馈持续改进（learning memory）。</p>
+<p><strong>可追溯和可审计。</strong> 纯LLM给出一个答案，你不知道依据是什么。Agent的每一步行动都有记录——调了什么API、查了什么数据库、检索了哪篇文献——形成完整的决策链条，可以被临床医生回溯审查。</p>
+<p>常见的应用场景有：</p>
+<p><img src="images/截屏2026-02-25 14.13.52.png" alt="截屏2026-02-25 14.13.52.png" class="note-image"><br />
+<strong>1. 医疗服务优化 (Healthcare Service Optimization)</strong></p>
+<p>服务KPI与患者反馈 → 分析痛点和瓶颈 → 检索行业最佳实践 → 生成工作流改进方案 → 输出流程图和建议 → 运营团队执行并反馈 → 持续监控和优化</p>
+<p>这是一个面向机构层面的循环改进流程，风险相对较低。</p>
+<p><strong>2. 医患对话模拟 (Doctor-Patient Interaction Simulation)</strong></p>
+<p>设定临床场景和脚本参数 → 解析对话目标（问诊、健康教育）→ LLM Agent生成对话（包含Doctor Agent、Patient Agent、Supervisor Agent三类角色）→ 患者可由Agent或真人扮演 → 记录对话并反馈 → 调整对话策略和提示词 → 迭代直到收敛</p>
+<p>核心特点是<strong>多Agent协作</strong>，Supervisor负责监督对话质量。主要用于医学教育和AI训练，如AgentClinic。</p>
+<p><strong>3. 自动化生物医学研究 (Automated Biomedical Research)</strong></p>
+<p>设定研究目标和假设 → 解析研究问题和关键变量 → 通过RAG检索文献和数据 → 生成实验设计（由Literature Agent、Experiment Agent、Analysis Agent分工）→ 调用实验室工具或代码解释器 → 收集和分析实验数据 → 研究者审查并反馈</p>
+<p>这是一个典型的多Agent分工架构，如BioDiscoveryAgent和CRISPR-GPT。</p>
+<p><strong>4. 科学文献分析 (Scientific Literature Analysis)</strong></p>
+<p>研究主题或查询 → 自动构建检索query → 从PubMed等数据库检索和筛选论文 → 提取关键信息（方法、结果、结论）→ 按章节生成结构化摘要 → 专家审查和修订 → 最终输出文献综述</p>
+<p>本质上是自动化systematic review的流程，可将数周的人工工作压缩。</p>
+<p><strong>5. <a href="#疾病诊断" class="wikilink" onclick="showNote('疾病诊断')">疾病诊断</a> (Disease Diagnosis)</strong></p>
+<p>症状描述和体征 → NER实体识别进行症状-体征匹配 → 检索鉴别诊断列表 → Tree-of-Thought推理进行诊断探索 → 生成带置信度分数的诊断 → 推荐进一步检查 → 根据检查结果更新诊断</p>
+<p>关键特点是<strong>迭代推理</strong>：不确定时推荐检查，拿到结果后更新结论，模拟临床医生的诊断思维过程。</p>
+<p><strong>6. <a href="#临床决策支持" class="wikilink" onclick="showNote('临床决策支持')">临床决策支持</a> (Clinical Decision Support)</strong></p>
+<p>患者EHR和检查数据 → 提取病史和风险因素 → 通过RAG检索指南和相似病例 → Chain-of-Thought推理生成决策建议 → 格式化输出风险评分和治疗方案 → 医生审查并反馈</p>
+<p>这个领域与FHIR API的集成最紧密，成熟度也最高（如MedAgentBench已有标准化benchmark）。</p>
+<p><strong>7. 通用系统工作流 (General System Workflow)</strong></p>
+<p>接收输入（症状、测试数据、研究目标、服务指标）→ 意图解析与实体提取（诊断、摘要、设计）→ 知识检索（PubMed、EHR知识图谱、工具API）→ 推理与决策（CoT、ToT、ReAct、多步规划）→ 输出生成（报告、建议、协议、对话、优化方案）→ 反馈迭代与人工审查</p>
+<p>这其实是前六个领域的<strong>抽象统一框架</strong>，论文也指出所有领域共享"输入解析→知识检索→多步推理→输出生成→人工反馈"这个workflow backbone。</p>
+<p>其中成熟度和可行性高的是疾病诊断和临床决策支持这两个。</p>
+<p>常见的agent可调用工具的分类有：<br />
+<img src="images/截屏2026-02-25 14.21.14.png" alt="截屏2026-02-25 14.21.14.png" class="note-image"></p>
+<p>具体不同的流程会调用其中不同的工具，例如：<br />
+- 疾病诊断流程中的"NER-based Symptom-Sign Matching" → 用到的是Data Understanding类的Text Processing工具<br />
+- 临床决策支持中的"Retrieve Guidelines and Similar Cases" → 用到的是Knowledge类的Retrieval Augmentation工具<br />
+- 自动化研究中的"Call Lab Tools or Code Interpreters" → 用到的是Numerical Analysis类的Code Generation工具<br />
+- 诊断流程中如果需要看影像 → 用到Multi-Modal类的Image Comprehension<br />
+- 文献分析中检查引用可靠性 → 用到Trustworthiness类的Factual Hallucination检测</p></section>
+<section class="note-section" id="医疗agent工具系统"><h1>医疗agent工具系统</h1><p>完整的工具清单</p>
+<p>按功能层级列出你整个系统可能需要的所有工具：</p>
+<h3>第一层：FHIR 患者数据获取（输入都是 patient_id）</h3>
+<table>
+<thead>
+<tr>
+<th>工具名</th>
+<th>对应 FHIR 资源</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>get_patient_info</td>
+<td>Patient</td>
+<td>基本信息：年龄、性别、体重等</td>
+</tr>
+<tr>
+<td>get_conditions</td>
+<td>Condition</td>
+<td>诊断列表（活跃/已解决/历史）</td>
+</tr>
+<tr>
+<td>get_medications</td>
+<td>MedicationRequest</td>
+<td>当前和历史用药记录</td>
+</tr>
+<tr>
+<td>get_observations</td>
+<td>Observation</td>
+<td>检验结果、生命体征（支持按 code 筛选如 HbA1c）</td>
+</tr>
+<tr>
+<td>get_allergies</td>
+<td>AllergyIntolerance</td>
+<td>过敏和不良反应记录</td>
+</tr>
+<tr>
+<td>get_procedures</td>
+<td>Procedure</td>
+<td>既往手术和操作</td>
+</tr>
+<tr>
+<td>get_diagnostic_reports</td>
+<td>DiagnosticReport</td>
+<td>影像/病理/实验室报告</td>
+</tr>
+<tr>
+<td>get_encounters</td>
+<td>Encounter</td>
+<td>就诊记录（门诊/急诊/住院）</td>
+</tr>
+<tr>
+<td>get_care_plans</td>
+<td>CarePlan</td>
+<td>现有的护理计划</td>
+</tr>
+<tr>
+<td>get_immunizations</td>
+<td>Immunization</td>
+<td>疫苗接种记录</td>
+</tr>
+</tbody>
+</table>
+<h3>第二层：医学知识检索（基于证据的推理支撑）</h3>
+<table>
+<thead>
+<tr>
+<th>工具名</th>
+<th>后端知识源</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>query_drug_interactions</td>
+<td>DrugBank / RxNorm API</td>
+<td>输入药物列表，返回已知相互作用和严重等级</td>
+</tr>
+<tr>
+<td>query_contraindications</td>
+<td>UMLS / SNOMED CT KG</td>
+<td>输入药物+患者条件，返回禁忌症</td>
+</tr>
+<tr>
+<td>search_clinical_guidelines</td>
+<td>指南向量库（RAG）</td>
+<td>输入诊断+患者特征，检索适用的临床实践指南推荐</td>
+</tr>
+<tr>
+<td>query_knowledge_graph</td>
+<td>自建医学 KG / UMLS</td>
+<td>输入疾病/症状实体，图遍历返回关联治疗、检查、预后信息</td>
+</tr>
+<tr>
+<td>search_medical_literature</td>
+<td>PubMed API / 文献向量库</td>
+<td>基于临床问题检索相关文献证据</td>
+</tr>
+<tr>
+<td>lookup_drug_info</td>
+<td>RxNorm / FDA DailyMed</td>
+<td>查询单个药物的适应症、用法用量、副作用、特殊人群注意事项</td>
+</tr>
+</tbody>
+</table>
+<h3>第三层：计算与校验工具</h3>
+<table>
+<thead>
+<tr>
+<th>工具名</th>
+<th>实现方式</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>calculate_dosage</td>
+<td>规则引擎/公式库</td>
+<td>根据体重、肾功能（CrCl/eGFR）、年龄、肝功能计算药物推荐剂量</td>
+</tr>
+<tr>
+<td>calculate_clinical_scores</td>
+<td>公式库</td>
+<td>计算临床评分（如 CHA₂DS₂-VASc 卒中风险评分、MELD 肝病评分、Wells 评分等）</td>
+</tr>
+<tr>
+<td>check_drug_allergy_conflict</td>
+<td>规则引擎</td>
+<td>将推荐用药与患者 AllergyIntolerance 记录交叉比对</td>
+</tr>
+<tr>
+<td>check_drug_drug_interaction</td>
+<td>规则引擎</td>
+<td>将推荐用药与患者当前用药交叉比对</td>
+</tr>
+<tr>
+<td>check_drug_condition_conflict</td>
+<td>规则引擎</td>
+<td>将推荐用药与患者合并症交叉比对（如肾衰患者不能用某些药物）</td>
+</tr>
+<tr>
+<td>validate_against_guidelines</td>
+<td>指南规则引擎</td>
+<td>将整个推荐方案与编码后的临床指南做合规性校验</td>
+</tr>
+</tbody>
+</table>
+<h3>第四层：输出生成工具</h3>
+<table>
+<thead>
+<tr>
+<th>工具名</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>generate_treatment_plan</td>
+<td>结构化输出完整的治疗方案（用药、剂量、频率、疗程）</td>
+</tr>
+<tr>
+<td>generate_lab_orders</td>
+<td>输出需要进一步做的检验检查列表及理由</td>
+</tr>
+<tr>
+<td>generate_referral</td>
+<td>输出需要转诊的专科及理由</td>
+</tr>
+<tr>
+<td>generate_follow_up</td>
+<td>输出随访计划（时间、监测指标）</td>
+</tr>
+</tbody>
+</table></section>
+<section class="note-section" id="医疗agent记忆系统"><h1>医疗agent记忆系统</h1><p>从调研结果来看，Agent Hospital 的这种<strong>"原始记录 + 蒸馏经验"双库设计</strong>确实是医疗诊断Agent中最典型的长期记忆架构范式。</p>
+<p>核心思路：</p>
+<p><strong>第一个库：医疗记录库（Medical Record Library）</strong>——存储具体的、未经加工的过往病例记录。每次正确诊断后，完整的病例信息（症状、检查、诊断结果等）直接入库。检索时通过病例相似度匹配，找到与当前患者最相关的历史病例作为参考。这本质上是<strong>情景记忆</strong>"我曾经见过一个类似的病人，当时是这样处理的"。</p>
+<p><strong>第二个库：经验库（Experience Base）</strong>——对成功和失败的诊疗过程进行反思和蒸馏，提取出抽象化的推理原则和诊断规则。比如从多个肺炎误诊病例中提炼出"当患者同时出现X和Y症状时，应优先排除Z疾病"这类泛化规则。这是<strong>语义/程序性记忆</strong>——跨病例抽象出来的"临床直觉"。</p>
+<p>所以你可以把它总结为一个谱系：一端是纯原始记录（MedChain-Agent 的病例数据库），另一端是纯蒸馏规则（MedAgentBench v2），Agent Hospital 和 EvoClinician 处于中间，两者都有且互补。<a href="#Agent Hospital" class="wikilink" onclick="showNote('Agent Hospital')">Agent Hospital</a>的消融实验也证实了这一点——两个库各自独立贡献性能提升，组合后效果最好。</p></section>
+<section class="note-section" id="医疗agent验证系统"><h1>医疗agent验证系统</h1><h2>问题：<a href="#Synthea" class="wikilink" onclick="showNote('Synthea')">Synthea</a>有 Ground Truth 吗？</h2>
+<p>Synthea 生成的 FHIR Bundle 中包含 CarePlan、MedicationRequest、Procedure 等资源 <a href="https://mitre.github.io/fhir-for-research/modules/synthea-overview">Mitre</a>，这意味着<strong>Synthea 生成的数据本身就包含了"这个患者实际接受了什么治疗"的完整记录</strong>。</p>
+<p>具体来说，Synthea 的疾病模块是状态转移机，支持 MedicationOrder、CarePlanStart、Procedure 等临床状态 <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7651916/">PubMed Central</a>，每个疾病模块按照临床护理路径定义了患者应该接受的治疗。这些模块是基于临床护理协议、CDC/NIH 等机构的公开疾病发生率和流行率统计数据以及临床专家反馈创建的 <a href="https://mitre.github.io/fhir-for-research/modules/synthea-overview">Mitre</a>。所以 Synthea 输出的 CarePlan 和 MedicationRequest <strong>就是根据临床指南和统计数据规则生成的"标准治疗路径"</strong>。</p>
+<p>这对你来说是一个<strong>天然的 ground truth 来源</strong>，但需要注意几个限制：</p>
+<p><strong>可以直接用的部分</strong>：Synthea 为每个患者生成了完整的 MedicationRequest（开了什么药）、CarePlan（护理计划包含哪些活动）、Procedure（做了什么检查/手术），这些都可以作为你评估 agent 输出的参照。你可以把一个患者的数据分为两部分——把诊断、检验和病史作为输入给 agent，把 CarePlan/MedicationRequest/Procedure 作为 ground truth 来评估 agent 的输出。</p>
+<p><strong>需要注意的限制</strong>：Synthea 生成的是基本 FHIR 资源，包含必填字段但很少填充可选字段 <a href="https://mitre.github.io/fhir-for-research/modules/synthea-overview">Mitre</a>。这意味着 CarePlan 可能比较粗粒度——它会告诉你"这个糖尿病患者的护理计划包含血糖管理和用药"，但可能不会精确到"二甲双胍每日两次每次 500mg"这种具体剂量层面。MedicationRequest 会有药物名称和编码，但剂量细节可能不完整。所以<strong>Synthea 适合做方案方向性的验证</strong>（开的药对不对、做的检查对不对），但可能不够支撑精确剂量层面的验证。</p>
+<p><strong>建议的补充方案</strong>：你可以在 Synthea 的基础上做一层增强——用临床指南规则引擎为每个 Synthea 患者补充生成更精细的 ground truth（具体剂量、优先级排序、禁忌原因等）。这样你就有了两层 ground truth：Synthea 原生的粗粒度治疗记录 + 你基于<a href="#指南规则引擎" class="wikilink" onclick="showNote('指南规则引擎')">指南规则引擎</a>生成的细粒度标准方案。Agent 的输出可以在两个粒度上分别评估。</p>
+<p><a href="#常见数据来源与验证方法" class="wikilink" onclick="showNote('常见数据来源与验证方法')">常见数据来源与验证方法</a></p>
+<h2>各论文的验证方式对比</h2>
+<p>这几篇核心论文的验证策略其实走的是<strong>完全不同的路线</strong>，可以归纳为四种范式：</p>
+<hr />
+<h3>范式一：模拟环境自验证 + 现成Benchmark迁移（Agent Hospital）</h3>
+<p>Agent Hospital 的验证分两步。<strong>内部验证</strong>：在模拟医院里用LLM生成的患者跑10,000个病例，每个病例的"正确答案"来自知识库里预设好的疾病信息（症状、检查结果、诊断、治疗方案都是从医学知识库提前定义好的），所以 ground truth 本质上是<strong>人工预定义的疾病模板</strong>——8种呼吸系统疾病，每种有对应的标准诊断和三种治疗方案。agent 的输出跟这个模板比对，算准确率。<strong>外部验证</strong>：把在模拟环境里进化后的 agent 直接拿去做 MedQA（USMLE 执照考试题），这里的 ground truth 就是考试的标准答案。</p>
+<p>关键点：它<strong>没有真实临床数据</strong>，ground truth 是知识库模板 + 标准化考试题。验证的是"agent 能不能学会跟预设答案一致"。</p>
+<hr />
+<h3>范式二：真实EHR + Gold SQL查询（EHRAgent）</h3>
+<p>EHRAgent 用的是 MIMIC-III 和 eICU 这两个真实ICU数据库。验证任务是<strong>临床问答</strong>——给一个自然语言问题（比如"多少患者做了临时气管切开？"），agent 需要生成 Python 代码查数据库得到答案。Ground truth 是由<strong>人工编写的 gold standard SQL 查询</strong>的执行结果。评估指标是 success rate（agent 的答案跟 gold SQL 的答案是否一致）。</p>
+<p>关键点：ground truth 是<strong>人写的SQL + 真实数据库执行结果</strong>，不涉及医学推理判断，验证的是"agent 能不能正确查询 EHR 数据"。</p>
+<hr />
+<h3>范式三：FHIR交互环境 + 人工标注任务（MedAgentBench）</h3>
+<p>MedAgentBench 来自斯坦福，构建了一个基于真实患者数据的 FHIR 兼容环境，100个患者 profile（超过700,000个数据元素）。300个临床任务由<strong>人类医生编写</strong>，分10个类别。验证方式分两类：query 类任务（GET请求），用 agent 的返回值跟<strong>人工写的 reference solution</strong> 比对；action 类任务（POST请求），用<strong>人工编写的 rule-based sanity checks</strong> 验证 POST payload 的正确性。</p>
+<p>关键点：ground truth 全是<strong>人类医生手工标注</strong>的，任务和评分标准都由临床专家设计。最好的模型（Claude 3.5 Sonnet v2）也只达到 69.67% success rate。</p>
+<hr />
+<h3>范式四：多Agent模拟诊疗 + 多维评估（AgentClinic）</h3>
+<p>AgentClinic 用四个 LLM agent（医生、患者、检查员、主持人）模拟临床诊疗过程。病例来自 MedQA（USMLE）和 NEJM Case Challenges。Ground truth 是<strong>原始病例的标准诊断</strong>。评估维度不止诊断准确率，还包括患者的 compliance、confidence、follow-up willingness 等以患者为中心的指标。还加入了认知偏见实验。</p>
+<p>关键点：ground truth 是<strong>现成医学考试/病例集的标准答案</strong>，创新在于把静态QA变成了动态交互评估。</p>
+<hr />
+<h2>对你项目的启示</h2>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>你的场景（临床决策支持）</th>
+<th>最接近的范式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数据来源</td>
+<td>Synthea合成数据</td>
+<td>类似Agent Hospital（合成），但你的数据更结构化</td>
+</tr>
+<tr>
+<td>任务类型</td>
+<td>生成治疗方案</td>
+<td>比所有范式都<strong>更难评估</strong>，因为输出是开放式方案</td>
+</tr>
+<tr>
+<td>Ground truth</td>
+<td>Synthea自带的CarePlan+MedicationRequest</td>
+<td>粗粒度类似Agent Hospital的预设模板</td>
+</tr>
+</tbody>
+</table>
+<p><strong>你其实可以组合用多种验证方式</strong>：</p>
+<ol>
+<li><strong>Synthea 自带的粗粒度 ground truth</strong>（类似 Agent Hospital 的知识库模板）——验证药物方向是否正确</li>
+<li><strong>临床指南规则引擎校验</strong>（类似 MedAgentBench 的 rule-based sanity checks）——验证方案合规性</li>
+<li><strong>LLM-as-Judge</strong>（类似 AgentClinic 的多维评估）——评安全性、完整性、效率等软指标</li>
+</ol>
+<p>这三层组合起来，比大多数现有论文的验证方式都更扎实。MedAgentBench 那种全人工标注的路线质量最高但成本最大，对你来说选 3-5 个疾病做少量人工标注作为补充验证就够了。</p></section>
+<section class="note-section" id="融入ai的obsidian笔记软件"><h1>融入ai的obsidian笔记软件</h1><p>目前市面上所有的笔记软件在融入ai的场景都几乎没有，或者说使用难度很高。我们可以在<a href="#obsidian" class="wikilink" onclick="showNote('obsidian')">obsidian</a>的基础上简化融入像<span class="broken-link">claudecode</span>这种工具集成进来，让用户以最简单丝滑的方式体验ai，打造自己的数字分身，成为自己的私人教师，又或者是thinking partner等等。<br />
+目前已有的ai都是以终端或者插件的形式，可以做成就放在主页面内的一个重要功能，随着用户书写的文字<span class="broken-link">context</span>越多，你的ai就会越懂你，甚至能跨越笔记软件的范畴成为你的一个私人管家。想象一下当你的openclaw能够有你生活的很多context，知道你最近在干什么项目，在想什么问题，经历了什么，明天的todolist，这样的话是不是就有打造一个更加智能贴心的私人贾维斯呢。只不过这个贾维斯战衣的贴合人体是通过用户不断记录笔记或者是导入别的平台笔记进来形成的context。<br />
+目前我的看法是这个方案难点在于如何让用户不断的记录自己的生活，让用户培养一个随时写笔记的习惯。剩下的别的部分其实反而倒是没那么难。<br />
+一个我能想到最直接的使用场景就是那些考验的学生在笔记软件里面无纸化学习，在笔记软件写题目的时候如果遇到不会的题目，是不是还要切换出去看讲解或者问ai，这个时候就可以直接在笔记软件里面形成一个闭环。</p></section>
+<section class="note-section" id="基于md的连接式记忆系统"><h1>基于md的连接式记忆系统</h1><p>我的想法是目前ai的记忆系统常见的主流方案是使用本地化存储，然后再进行rag提取召回，难点在于召回的精度和基于语义的信息无法通过简单的字符串匹配进行召回相关信息。所以在看了<a href="#obsidian" class="wikilink" onclick="showNote('obsidian')">obsidian</a>的连接md文件后产生了一个想法就是：如果我们在拿到了用户的聊天记录后，让llm自己对这一串聊天记录的字符进行识别哪些是对话谈论的主体，哪些内容值得创建一个新的连接（例如obsidian的[[]]一样。这样下次用户再次问到了相关问题后，我们只需要查找该问题的主体所连接的聊天记录，就能够在一个小范围能进行召回，从而提高精度。<br />
+我们依然可以像obsidian这种构建一个关系图谱，从而可以查看用户对某一个节点的全局经历，在此基础上可以进行总结等别等精简操作。尤其适合那些结构化信息。</p></section>
+<section class="note-section" id="疾病诊断"><h1>疾病诊断</h1><p>本质是一个根据现象推理病因的过程，先通过调用工具收集信息，然后进行推理得到结果。从症状出发，推导出"这是什么病"。<br />
+<strong>详细流程</strong>：</p>
+<ol>
+<li><a href="#症状描述和体征输入" class="wikilink" onclick="showNote('症状描述和体征输入')">症状描述和体征输入</a>：患者<a href="#描述症状" class="wikilink" onclick="showNote('描述症状')">描述症状</a>，或从患者的病历库中通过调用工具提取（FHIR)</li>
+<li><a href="#NER实体识别与匹配" class="wikilink" onclick="showNote('NER实体识别与匹配')">NER实体识别与匹配</a>：根据得到的信息提取关键信息例如症状，然后调用外部工具进行知识库中的疾病-症状映射进行匹配</li>
+<li><strong>鉴别诊断列表检索</strong>：根据匹配结果，从知识库中拉出一组候选疾病（鉴别诊断）</li>
+<li><a href="#Tree-of-Thought诊断探索" class="wikilink" onclick="showNote('Tree-of-Thought诊断探索')">Tree-of-Thought诊断探索</a>：这是核心推理步骤。不同于简单的线性推理，ToT会<strong>分支式地</strong>同时考虑多个诊断假设，评估每条路径的合理性，逐步排除不太可能的候选</li>
+<li><strong>生成带置信度的诊断</strong>：输出不是单一答案，而是带有置信度分数的诊断结果，比如"肺炎 85%，支气管炎 10%"</li>
+<li><a href="#推荐进一步检查" class="wikilink" onclick="showNote('推荐进一步检查')">推荐进一步检查</a>：当置信度不够高时，Agent会主动建议做哪些检查来区分剩余候选（比如"建议做胸部CT以排除肺结核"）</li>
+<li><strong>根据检查结果更新诊断</strong>：新的检查结果回来后，Agent重新推理，更新诊断结论</li>
+</ol></section>
+<section class="note-section" id="临床决策支持"><h1>临床决策支持</h1><p>第一步：<a href="#患者EHR和检查数据获取" class="wikilink" onclick="showNote('患者EHR和检查数据获取')">患者EHR和检查数据获取</a><br />
+第二步：<a href="#提取病史和风险因素" class="wikilink" onclick="showNote('提取病史和风险因素')">提取病史和风险因素</a><br />
+第三步：<a href="#检索指南和相似病例" class="wikilink" onclick="showNote('检索指南和相似病例')">检索指南和相似病例</a><br />
+第四步：<a href="#Chain-of-Thought推理生成决策建议" class="wikilink" onclick="showNote('Chain-of-Thought推理生成决策建议')">Chain-of-Thought推理生成决策建议</a><br />
+第五步：<a href="#格式化输出风险评分和治疗方案" class="wikilink" onclick="showNote('格式化输出风险评分和治疗方案')">格式化输出风险评分和治疗方案</a><br />
+第六步：<span class="broken-link">医生审查并反馈</span></p></section>
+<section class="note-section" id="症状描述和体征输入"><h1>症状描述和体征输入</h1><p>具体实现：<br />
+- <strong>患者EHR和检查数据输入</strong>：从电子健康记录系统（通常通过FHIR API）获取患者的完整数据<br />
+该过程难点在于，EHR资源一般都是多跳链接的格式数据，Agent需要在FHIR的图结构数据中导航，跨多个资源类型链式查询。MedAgentBench就是专门为这个场景建的benchmark，用100个合成患者和300个临床任务来测试Agent能否正确操作FHIR API。</p></section>
+<section class="note-section" id="描述症状"><h1>描述症状</h1><h2>模拟疾病诊断的输入从哪来</h2>
+<p>疾病诊断的输入是症状描述，那做研究或测试时这些症状描述的来源主要有几种：</p>
+<p><strong>第一种：从合成患者数据中生成。</strong> 论文详细介绍了Synthea这个工具。Synthea通过概率状态机模拟疾病进程，生成的是完整的FHIR格式病历，里面包含诊断、检验、用药等结构化数据。但Synthea生成的是结构化记录，不是患者口述的症状描述。所以还需要一步<strong>从结构化数据到自然语言症状描述的转化</strong>。这可以用LLM来做——把FHIR记录中的Condition和Observation数据转化为模拟患者的口语化描述。</p>
+<p><strong>第二种：从真实临床数据集中提取。</strong> 论文提到的几个benchmark用了这种方式。AgentClinic从MedQA、NEJM病例报告和MIMIC-IV中提取临床场景。MedJourney用的是中文临床对话数据。这些数据集已经包含了自然语言形式的症状描述和最终诊断的对照。</p>
+<p><strong>第三种：用LLM直接生成模拟患者。</strong> 论文提到的AgentClinic就是这种思路——用一个Patient Agent来扮演患者，根据预设的疾病参数生成符合该疾病表现的症状描述。Doctor Agent来问诊，Patient Agent根据自己的"病情设定"来回答。这种方式的好处是可以模拟完整的交互式问诊过程，而不只是一段静态的症状描述。</p>
+<h2>实际的常见做法</h2>
+<p>在当前研究中最常见的是<strong>第二种和第三种的结合</strong>。先从真实数据集中获取疾病的ground truth（确诊诊断），然后用LLM基于这个ground truth生成患者角色设定，再让诊断Agent与模拟患者交互来测试诊断准确率。</p>
+<p>论文Figure 4展示的benchmark构建流水线就是这个思路：Synthea生成合成患者 → 部署到FHIR数据库 → 基于患者数据编写临床任务 → Agent执行 → 评估。其中"编写临床任务"这一步，对疾病诊断场景来说就是把患者的结构化病历转化为诊断任务的输入描述。</p></section>
+<section class="note-section" id="NER实体识别与匹配"><h1>NER实体识别与匹配</h1><ul>
+<li><strong>提取病史和风险因素</strong>：从EHR的多个资源中（Condition、Observation、MedicationRequest等）综合提取关键信息如症状等</li>
+<li>调用外部工具进行匹配：知识库中的疾病-症状映射进行匹配</li>
+</ul>
+<p>症状-疾病匹配的实现方式主要有几种路径，从简单到复杂：</p>
+<h2>基于医学知识图谱的匹配</h2>
+<p>这是最直接的方式。医学领域有现成的大型本体和知识库，比如<strong>UMLS（统一医学语言系统）</strong>、<strong>SNOMED CT</strong>、<strong>ICD编码体系</strong>等，它们内部维护了疾病与症状之间的关联关系。</p>
+<p>具体流程是：NER提取出症状实体后，先做<strong>实体链接（Entity Linking）</strong>，把自由文本中的症状映射到知识库的标准化概念上。比如患者说"脑壳疼"，需要链接到UMLS中的标准概念"Headache (C0018681)"。然后在知识图谱中查询这个概念关联的所有疾病节点，对多个症状的查询结果取交集或加权合并，就得到了候选疾病列表。</p>
+<p>这一步的难点在于实体链接——患者的口语化表达、缩写、同义词都需要正确映射到标准术语。</p>
+<h2>基于嵌入的语义匹配</h2>
+<p>把症状和疾病都编码成向量，在嵌入空间中计算相似度。论文中提到的RareAgents就是这种思路，它用<strong>患者嵌入（patient embeddings）</strong>去检索最相似的历史病例。具体做法是把当前患者的症状集合编码成一个向量，然后在罕见病数据库中做top-k近邻检索，找到症状模式最相似的历史诊断案例。</p>
+<p>这种方法的优势是能捕捉模糊的语义相似性，不需要精确的术语匹配。</p>
+<h2>基于概率模型的匹配</h2>
+<p>更传统的医学诊断系统用贝叶斯推理。核心思想是：已知各种疾病出现各种症状的条件概率 P(症状|疾病)，通过贝叶斯公式反推 P(疾病|观察到的症状集合)。每个候选疾病都会得到一个后验概率，这也是最终置信度分数的来源之一。</p>
+<p>论文中提到的Synthea合成数据生成就用了类似的概率模型——疾病的状态转移概率来自临床文献和流行病学数据。</p>
+<h2>为什么不直接用LLM自身知识</h2>
+<p>理论上LLM在预训练时已经吸收了大量医学知识，确实可以直接做症状到疾病的推理。实际上很多简单场景下LLM也确实是这么干的。但论文反复强调不能只依赖LLM内部知识，原因有几个：</p>
+<p><strong>幻觉问题是最核心的。</strong> 论文Section 6.1.1专门讨论了这点——LLM可能生成"看起来合理但事实上错误"的匹配。比如它可能自信地把某组症状关联到一个根本不存在的疾病，或者给出错误的症状-疾病关联概率。在普通对话中这不严重，但在临床诊断中可能导致误诊。</p>
+<p><strong>知识时效性问题。</strong> LLM的知识截止于训练数据，而医学知识持续更新。新的疾病定义、诊断标准变更、新发传染病等都不在LLM的知识范围内。外部知识库（如UMLS）是持续维护更新的。</p>
+<p><strong>可验证性问题。</strong> LLM直接输出"这可能是X病"时，你无法追溯它的依据是什么。但如果是从UMLS查出来的关联，每条匹配都有明确的来源和编码，可以被临床医生审查和验证。论文把这归入Trustworthiness维度。</p>
+<p><strong>覆盖度问题。</strong> 罕见病是典型例子。LLM训练数据中罕见病的语料非常少，内部知识严重不足。论文提到的RareAgents和DeepRare都是专门解决这个问题的——必须借助专门的罕见病数据库。</p>
+<p>所以现实中的做法通常是<strong>两者结合</strong>：用外部工具做结构化的症状-疾病匹配提供候选列表（确保准确性和可追溯性），再让LLM做更高层的综合推理（利用其强大的上下文理解和推理能力）。这正是论文强调的Agent范式相比纯LLM的核心优势。</p></section>
+<section class="note-section" id="Tree-of-Thought诊断探索"><h1>Tree-of-Thought诊断探索</h1><p><strong>标准CoT（链式思考）</strong> 的推理是线性的：症状A+B+C → 可能是疾病X → 验证 → 结论。<br />
+ToT的推理是分支式的：<br />
+<img src="images/Pasted image 20260225151136.png" alt="Pasted image 20260225151136.png" class="note-image"><br />
+具体实现包含三个关键机制：</p>
+<p><strong>第一，思考生成（Thought Generation）。</strong> 在每个节点，让LLM生成多个可能的推理方向。实现上就是对同一个prompt做多次采样，或者在prompt中明确要求"请给出3种可能的诊断假设及其理由"。每次生成就是树的一个分支。</p>
+<p><strong>第二，状态评估（State Evaluation）。</strong> 对每个分支进行打分，判断这条推理路径有多大希望通向正确答案。评估方式有两种：一种是让LLM自己打分（"请评估这个诊断假设的合理性，1-10分"），另一种是用外部工具验证（比如拿假设去知识库查是否有支持证据）。</p>
+<p><strong>第三，搜索策略（Search Algorithm）。</strong> 决定优先探索哪些分支。常用的有两种：BFS（广度优先）DFS（深度优先）如果评估不理想就回溯换另一条。在诊断场景中，BFS更常用，因为需要同时保持多个鉴别诊断假设。</p>
+<p>实现逻辑：<br />
+初始化: 根节点 = 患者症状描述<br />
+重复:<br />
+    1. 对当前所有叶节点，调用LLM生成子节点(多个推理分支)<br />
+    2. 对每个新节点，调用LLM或外部工具评估分数<br />
+    3. 剪枝: 只保留top-k个最有前途的节点<br />
+    4. 检查终止条件: 是否有节点达到了足够高的置信度<br />
+输出: 得分最高的完整推理路径作为诊断结论</p>
+<p><strong>与疾病诊断的结合点</strong>在于，ToT天然适合鉴别诊断的思维模式。临床医生做诊断时也不是线性思考的，而是同时维持多个假设，每获得一条新证据就更新各假设的可能性，逐步缩小范围。ToT就是在用搜索算法模拟这个过程。论文中提到的DeepRare处理2919种罕见病的诊断时，就是通过这种"自反思诊断循环"在多轮中逐步收窄候选范围的。</p></section>
+<section class="note-section" id="推荐进一步检查"><h1>推荐进一步检查</h1><h2>各阶段的信息来源</h2>
+<p><strong>初始阶段：患者描述驱动。</strong> 流程的起点确实是非结构化的症状描述，Agent从中提取症状做初步的鉴别诊断。</p>
+<p><strong>ToT推理阶段：知识库驱动。</strong> Agent在展开多个假设分支时，主要调用的是疾病知识库、临床指南等外部知识工具来评估各假设的合理性。</p>
+<p><strong>验证和深入阶段：这里就转向API和工具了。</strong> 当ToT给出了带置信度的候选诊断后，Agent需要进一步收集证据来区分候选，这时候的信息获取方式会变得多样化：</p>
+<ul>
+<li><strong>调FHIR API查历史数据</strong>：比如ToT给出"高血压危象 0.6，偏头痛 0.4"，Agent会去<code>GET /Observation?code=blood-pressure</code>查历史血压，如果发现长期高血压记录，高血压危象的置信度就会上升</li>
+<li><strong>推荐检查并获取结果</strong>：Agent建议做头颅CT，检查结果返回后（在模拟环境中这也是通过API或模拟工具获取的），Agent根据结果更新判断</li>
+<li><strong>调用计算工具</strong>：比如需要计算某个风险评分来辅助判断</li>
+<li><strong>继续问诊</strong>：回到患者描述这个通道，追问特定的症状细节（"头痛是搏动性的还是压迫性的？"）</li>
+<li>
+<h2>所以整个流程是多通道混合的</h2>
+</li>
+</ul>
+<pre><code>第1轮：患者描述 → NER提取 → 知识库匹配 → ToT推理
+        ↓
+       候选诊断（置信度不够高）
+        ↓
+第2轮：同时启动多个通道
+       ├─ FHIR API → 查历史病历、检验结果
+       ├─ 追问患者 → 获取更多症状细节  
+       ├─ 推荐检查 → 获取新的检查结果
+       └─ 知识库 → 检索更针对性的鉴别诊断信息
+        ↓
+       更新置信度，重新推理
+        ↓
+第3轮：如果仍不确定，继续迭代...
+</code></pre>
+<p>论文中的DDO系统就体现了这种混合模式——一个Agent负责向患者问诊收集信息（患者描述通道），另一个Agent负责基于已有信息做诊断推理（可以调用各种工具和API）。两个Agent协作，交替在不同信息通道之间切换。</p></section>
+<section class="note-section" id="患者EHR和检查数据获取"><h1>患者EHR和检查数据获取</h1><p>这一步是临床决策支持区别于疾病诊断的<strong>最显著特征</strong>——它的数据入口是结构化的EHR系统，而不是患者的口述症状。</p>
+<p>Agent通过FHIR API与电子健康记录系统交互。论文Section 3.1详细讨论了这个过程。比如Agent需要了解一个患者的情况，它会发起一系列API调用：</p>
+<pre><code>GET /Patient/123                    → 获取基本人口信息（年龄、性别）
+GET /Condition?patient=123          → 获取所有诊断（糖尿病、高血压...）
+GET /Observation?patient=123&amp;code=glucose  → 获取血糖检验结果
+GET /MedicationRequest?patient=123  → 获取当前用药列表
+GET /AllergyIntolerance?patient=123 → 获取过敏史
+</code></pre>
+<p>每次API调用返回的是FHIR格式的JSON数据。这里论文Section 2.4.1提出了一个重要问题：<strong>FHIR响应中有大量结构性冗余</strong>。一个简单的血糖检验结果可能返回几十个字段（编码系统URI、资源元数据、版本标识等），但对临床推理真正有用的只有检验名称、数值、单位和时间戳。这些冗余会占用Agent的上下文窗口并引入噪声。<br />
+设计<strong>临床数据蒸馏层</strong>——在感知阶段就提取出推理相关的字段——是一个重要但尚未充分探索的改进方向。MedAgentBench目前的做法是把原始API响应直接传给LLM，没有做系统性的蒸馏处理。</p></section>
+<section class="note-section" id="提取病史和风险因素"><h1>提取病史和风险因素</h1><p>拿到原始数据后，Agent需要从中综合提取出对决策有用的关键信息。这不是简单的数据搬运，而是需要跨多个FHIR资源做<strong>信息聚合和关联推理</strong>。</p>
+<p>举个具体例子：判断一个糖尿病患者是否需要调整用药方案。Agent需要综合：</p>
+<ul>
+<li>Condition资源中的诊断时间和严重程度</li>
+<li>Observation资源中近3个月的HbA1c趋势（是在好转还是恶化）</li>
+<li>MedicationRequest中当前用药的剂量和持续时间</li>
+<li>Observation中的肾功能指标（因为某些降糖药对肾功能有要求）</li>
+<li>AllergyIntolerance中的药物过敏记录</li>
+</ul>
+<p>这一步的难点在于Agent需要理解FHIR资源之间的<strong>图状引用关系</strong>，正确地链式查询。论文Section 3.1.1强调FHIR的数据模型不是扁平的关系型数据库，而是图结构的——一个Patient引用多个Observation，每个Observation又引用特定的检验代码。Agent必须能正确地遍历这些链接。</p></section>
+<section class="note-section" id="检索指南和相似病例"><h1>检索指南和相似病例</h1><p>这一步是临床决策支持的<strong>核心知识补充环节</strong>，通过RAG实现。</p>
+<p><strong>指南检索</strong>方面，Agent把提取出的患者关键信息作为查询，去检索相关的临床实践指南。比如对上述糖尿病患者，Agent可能检索到ADA（美国糖尿病协会）最新的血糖管理指南，其中规定"HbA1c持续高于7%且当前单药治疗满3个月，建议联合用药"。</p>
+<p><strong>相似病例检索</strong>方面，利用论文Section 2.4.2讨论的情景记忆机制。Agent在历史病例库中检索与当前患者特征最相似的案例，看那些病例最终采用了什么治疗方案、效果如何。ReflecTool用BM25做检索，RareAgents用嵌入向量做语义检索。</p>
+<p>指南提供的是<strong>通用的标准化建议</strong>，相似病例提供的是<strong>个体化的实践经验</strong>。两者结合才能给出既符合规范又贴合患者具体情况的决策建议。</p>
+<p>这里的经验记忆机制可以借鉴</p></section>
+<section class="note-section" id="Chain-of-Thought推理生成决策建议"><h1>Chain-of-Thought推理生成决策建议</h1><p>与疾病诊断使用Tree-of-Thought不同，临床决策支持主要使用<strong>Chain-of-Thought（链式推理）</strong>。原因是这一步的推理相对结构化——已经有明确的诊断、明确的患者数据、明确的指南推荐，Agent要做的是把这些信息<strong>逻辑地串联起来</strong>，推导出具体的行动建议。</p>
+<p>一个典型的CoT推理过程：</p>
+<pre><code>已知事实：
+- 患者：65岁男性，2型糖尿病，诊断3年
+- 当前用药：二甲双胍500mg bid，已服用3个月
+- 近期HbA1c：8.2%（目标&lt;7%）
+- 肾功能：eGFR 72 ml/min（轻度下降）
+- 过敏：无已知药物过敏
+
+推理步骤1：评估当前治疗效果
+→ HbA1c 8.2%远高于7%目标，当前方案控制不佳
+
+推理步骤2：对照指南
+→ ADA指南：单药3个月未达标，应联合第二种降糖药
+→ 候选二线药物：SGLT2抑制剂、GLP-1受体激动剂、DPP-4抑制剂
+
+推理步骤3：结合患者个体因素
+→ eGFR 72：SGLT2抑制剂在eGFR&gt;45时可用，且对心肾有额外获益
+→ 65岁，应考虑低血糖风险：三类候选药物低血糖风险均较低
+→ 无相关过敏史
+
+推理步骤4：参考相似病例
+→ 历史相似患者中，二甲双胍+SGLT2抑制剂方案的HbA1c下降幅度中位数为1.1%
+
+结论：建议在当前二甲双胍基础上加用SGLT2抑制剂
+</code></pre>
+<p>这个过程中，Agent可能在某些步骤调用外部工具——比如调用医学计算器计算肾功能分期，或者调用药物交互数据库检查两药是否有相互作用。</p></section>
+<section class="note-section" id="格式化输出风险评分和治疗方案"><h1>格式化输出风险评分和治疗方案</h1><p>Agent需要把推理结论转化为临床医生能直接使用的<strong>结构化输出</strong>。这包括：</p>
+<p><strong>风险评分的量化。</strong> Agent调用医学计算器工具，计算各种标准化评分。比如心血管风险用Framingham评分或ASCVD评分，肺炎严重度用CURB-65评分。论文提到CalcQA框架支持单位自动换算和灵活的工具编排，确保计算的精确性。</p>
+<p><strong>治疗方案的结构化呈现。</strong> 不是一段自由文本，而是格式化的建议——具体药物名称、剂量、频次、疗程，以及需要监测的指标和复查时间。</p>
+<p><strong>置信度和证据标注。</strong> 每条建议标注其依据来源（来自哪条指南、哪个相似病例），以及Agent对该建议的置信程度。这是可追溯性的保障。</p>
+<p>这一步可能还涉及<strong>写回操作</strong>。在FHIR环境中，Agent不仅可以读取数据，还可以发起写入请求。比如：</p>
+<pre><code>POST /MedicationRequest  → 提交新的用药医嘱（待医生批准）
+POST /ServiceRequest     → 提交检查申请（如建议3个月后复查HbA1c）
+</code></pre>
+<p>当然，这些写入操作在当前系统中都需要经过下一步的人工审批。</p></section>
+<section class="note-section" id="Agent Hospital"><h1>Agent Hospital</h1><h2>MedAgent-Zero 的完整记忆架构</h2>
+<p>Agent Hospital 的核心训练策略叫 <strong>MedAgent-Zero</strong>，它的记忆模块由两个库和一个五步演进流程构成。</p>
+<h3>库一：医疗记录库（Medical Record Library）</h3>
+<p>这个库存的是<strong>具体的、完整的成功病例</strong>。当医生 agent 对一个模拟患者做出正确诊断后，整个诊疗过程——包括患者症状描述、问诊对话、检查结果、诊断结论和治疗方案——作为一条完整的医疗记录<strong>直接</strong>入库，不做任何加工或抽象。</p>
+<p>此外，这个库的初始化不是从零开始的。它还包含来自医学文献和教科书的示范病例（exemplar cases），作为冷启动的知识种子。所以库的内容 = <strong>文献示范病例 + 累积的模拟成功病例</strong>。</p>
+<p>它的作用类似于一个<strong>案例数据库</strong>：当面对新患者时，agent 检索出与当前病例最相似的历史成功记录，作为 few-shot 示例注入提示词中，让 LLM 参考"以前类似情况是怎么处理的"。</p>
+<h3>库二：经验库（Experience Base）</h3>
+<p>这个库存的是<strong>从失败中蒸馏出来的抽象规则</strong>。整个流程是这样的：</p>
+<p>当医生 agent 对一个患者做出<strong>错误诊断</strong>时，系统不是简单丢弃这个失败案例，而是触发一个反思流程。agent 被要求对比自己的错误输出和正确答案，分析错在哪里，然后<strong>提炼出一条可泛化的经验教训</strong>——这就是"经验总结"（experience summarization）。</p>
+<p>但蒸馏出来的经验不会直接入库。它还需要过一关验证：系统会用这条新经验去<strong>重新测试</strong>之前做错的那个病例，看看加上这条经验后能否做对。只有<strong>验证通过</strong>的经验才会被进一步抽象后写入经验库。验证失败的就丢弃。</p>
+<p>所以经验库里的每条内容都是经过"失败→反思→蒸馏→验证→抽象"五步流程淬炼过的高质量推理规则，而不是随便总结的教训。</p>
+<h3>推理时双库协同检索</h3>
+<p>推理（inference）时，面对一个新患者，agent 同时从两个库检索：</p>
+<p>从<strong>记录库</strong>中取出 <strong>Top-K 个最相似的成功病例</strong>作为参考示例（论文实验中 K=2），从<strong>经验库</strong>中取出 <strong>Top-K 条最相关的蒸馏经验</strong>作为推理指导（同样 K=2）。</p>
+<p>两组内容一起注入到 LLM 的提示词中，agent 同时看到"类似的成功案例长什么样"和"处理这类问题应该遵循什么原则"，然后生成诊断。</p>
+<p>检索的相似度度量论文没有特别详述，但从上下文推断应该是基于症状/疾病描述的文本相似度。</p>
+<h3>消融实验结果</h3>
+<p>论文做了很清晰的消融（Table 3），四种配置：</p>
+<p><strong>什么都不用（vanilla）</strong>：基线水平。<strong>只用记录库</strong>：有提升，但有限。<strong>只用经验库</strong>：也有提升，跟单用记录库差不多量级。<strong>两个库都用</strong>：效果最好，93.06%（GPT-4），超越人类专家的约 87%。</p>
+<p>这说明两个库提供的是<strong>不同维度的互补信息</strong>，缺一不可。</p>
+<p>论文还做了经验积累量的实验（Table 4）：固定用 top-2 经验 + top-2 记录，分别测试从 0/2000/4000/6000/8000 个模拟患者累积的经验库效果。结论是<strong>经验越多准确率越高</strong>，8000 病例的经验库在 GPT-3.5 和 GPT-4 上都是最好的。这验证了经验库的价值随规模增长。</p>
+<h3>用一个类比总结</h3>
+<p>把这个架构类比为一个医学实习生的成长：</p>
+<p><strong>记录库</strong> = 你的<strong>临床病例笔记本</strong>。每次成功处理一个患者，你把完整的病例记下来。下次遇到类似症状的患者，你翻笔记本看"上次那个差不多的情况我是怎么做的"。</p>
+<p><strong>经验库</strong> = 你的<strong>错题反思集</strong>。每次误诊后，你不是简单记住"这个病人我诊断错了"，而是提炼出"以后遇到 X 症状合并 Y 体征时，不要急着下 A 诊断，应该先排除 B 的可能"这类通用原则。而且你会验证这条原则——拿回去看"如果当时我知道这条规则，还会不会犯同样的错"。只有验证有效的规则才留下。</p>
+<p><strong>推理时</strong> = 遇到新患者时，你同时翻<strong>笔记本</strong>找类似病例参考，又翻<strong>错题集</strong>找相关的推理原则，两者结合做出诊断。</p>
+<p>这个设计之所以有效，核心在于两个库覆盖了临床推理中<strong>具象</strong>和<strong>抽象</strong>两个不同的认知层次。记录库提供 pattern matching（这个患者跟谁像），经验库提供 rule-based reasoning（处理这类情况的通用策略）。单独哪一个都不足以应对临床推理的复杂性。</p></section>
+<section class="note-section" id="指南规则引擎"><h1>指南规则引擎</h1><p>临床指南规则引擎本质上就是把医学临床实践指南（Clinical Practice Guidelines, CPG）从自然语言文本转化为<strong>可计算的 if-then 规则</strong>，让机器能够自动执行指南推荐。</p>
+<p>举个具体例子你就明白了。ADA（美国糖尿病协会）指南里有一条推荐：</p>
+<blockquote>
+<p>"对于新诊断的 2 型糖尿病患者，如果 HbA1c &lt; 9% 且无心血管疾病史，一线治疗推荐二甲双胍单药，起始剂量 500mg 每日一次，逐步增加至 2000mg/天。"</p>
+</blockquote>
+<p>这条自然语言规则编码成可执行规则就是：</p>
+<pre><code>IF diagnosis == &quot;Type 2 Diabetes&quot;
+   AND is_new_diagnosis == true
+   AND HbA1c &lt; 9.0
+   AND has_condition(&quot;cardiovascular disease&quot;) == false
+   AND eGFR &gt;= 30
+THEN
+   recommend_medication(&quot;Metformin&quot;)
+   initial_dose = 500mg
+   frequency = &quot;once daily&quot;
+   target_dose = 2000mg/day
+   titration = &quot;increase by 500mg every 1-2 weeks&quot;
+   monitoring = [&quot;HbA1c every 3 months&quot;, &quot;renal function every 6 months&quot;]
+</code></pre>
+<p>这就是规则引擎做的事情——把指南的临床决策逻辑变成程序可以跑的条件-动作对。</p>
+<h2>实际的技术实现</h2>
+<p>业界主要有三种实现路线：</p>
+<p><strong>第一种是基于 CDS Hooks + CQL 的标准化路线</strong>。HL7 定义了一套专门用于临床决策支持的标准框架。CQL（Clinical Quality Language）是一种专门设计的声明式查询语言，可以直接操作 FHIR 资源写规则。你的场景用 FHIR 数据，这条路线是天然适配的。一条 CQL 规则大概长这样：</p>
+<pre><code class="language-cql">define &quot;Needs Metformin&quot;:
+  exists([Condition: &quot;Type 2 Diabetes&quot;]) 
+  and not exists([Condition: &quot;Cardiovascular Disease&quot;])
+  and Last([Observation: &quot;HbA1c&quot;]).value &lt; 9.0 '%'
+  and Last([Observation: &quot;eGFR&quot;]).value &gt;= 30 'mL/min'
+  and not exists([MedicationRequest: &quot;Metformin&quot;])
+</code></pre>
+<p>CDS Hooks 则定义了触发时机——什么时候调用这些规则（比如医生打开处方界面时触发用药建议）。CQL 引擎（比如开源的 cql-engine）可以直接对着 FHIR 服务器执行这些规则。</p>
+<p><strong>第二种是传统规则引擎路线</strong>，用 Drools 或者 Python 的自定义规则系统。把指南编码成一组规则文件，每条规则有条件部分和动作部分，引擎做前向链推理。这种方式更灵活但不如 CQL 与 FHIR 天然集成。</p>
+<p><strong>第三种是决策表/决策树路线</strong>。把指南简化成结构化的表格，行是条件组合，列是推荐动作。适合分支相对清晰的指南（比如高血压用药阶梯），但难以处理复杂的多条件交叉场景。</p>
+<h2>在你的系统中它扮演什么角色</h2>
+<p>回到你的 agent 架构，规则引擎在两个环节发挥作用：</p>
+<p><strong>作为 agent 可调用的工具</strong>（第三层校验工具中的 <code>validate_against_guidelines</code>）。Agent 生成了一个治疗方案后，调用规则引擎做合规性校验。引擎会逐条检查：这个患者的情况下，agent 推荐的药是不是指南推荐的一线/二线药？剂量在不在合理范围内？有没有遗漏指南要求的必做检查？如果有违反，引擎返回具体是哪条指南规则被违反了，agent 可以据此修正方案。</p>
+<p><strong>作为 ground truth 生成器</strong>。你用 Synthea 生成患者数据后，Synthea 自带的 CarePlan 比较粗。你可以用规则引擎对每个 Synthea 患者跑一遍，根据患者的诊断、检验值、合并症等条件，自动生成一份精细的标准治疗方案作为 ground truth。这样评估 agent 输出时就有一个基于指南的客观参照。</p>
+<h2>现实层面的考量</h2>
+<p>规则引擎的主要难点不在技术实现，而在<strong>规则的编写和维护</strong>。临床指南数量庞大，每条指南有很多分支条件，而且指南每年都在更新。完整编码一个疾病的所有指南推荐是大量的人工工作。</p></section>
+<section class="note-section" id="Synthea"><h1>Synthea</h1><p>可以，我直接来操作。先把 Synthea 克隆下来看看结构。</p>
+<h2>Synthea 确实有 Ground Truth，但粒度有限</h2>
+<p><strong>有什么（可以当 ground truth 的）：</strong></p>
+<p>Synthea 的糖尿病模块定义了一套完整的<strong>阶梯用药规则</strong>，基于 HbA1c 严重程度分级来决定用什么药。具体来说：</p>
+<p>HbA1c ≤ 5.7% → 正常，不开药。HbA1c 5.7-6.5% → 前驱糖尿病（severity 0），只开 CarePlan（饮食+运动）。HbA1c 6.5-7.5% → 糖尿病 severity 1，暂不开药。HbA1c 7.5-9.0% → severity 2，开<strong>二甲双胍 500mg 缓释片</strong>（单药治疗）。HbA1c &gt; 9.0% 首次 → severity 3，加<strong>利拉鲁肽 6mg/mL 注射笔</strong>（双药治疗）。HbA1c &gt; 9.0% 持续一年以上 → severity 4，再加<strong>卡格列净 100mg 口服片</strong>（三药治疗）。如果合并糖尿病肾病 → 转<strong>胰岛素</strong>（先基础胰岛素 Humulin，再转餐时胰岛素 Humalog）。</p>
+<p>CarePlan 也有结构化内容：包括糖尿病饮食、运动治疗两个活动，以及 HbA1c &lt; 7%、空腹血糖 &lt; 108 mg/dL、血压 &lt; 140/90 三个目标。</p>
+<p>每条记录都有标准的 SNOMED-CT 和 RxNorm 编码，输出为标准 FHIR 资源（MedicationRequest、CarePlan、Condition、Observation）。</p>
+<p><strong>缺什么（作为 ground truth 的局限）：</strong></p>
+<p>第一，<strong>用药逻辑比较粗</strong>。真实指南里糖尿病的二线用药选择取决于很多患者因素（有没有心血管疾病、心衰、CKD、肥胖、低血糖风险等），但 Synthea 简化成了固定的阶梯：二甲双胍 → 利拉鲁肽 → 卡格列净 → 胰岛素，没有个体化分支。</p>
+<p>第二，<strong>剂量是固定的</strong>。每种药只有一个剂量（比如二甲双胍只有 500mg），没有滴定逻辑（真实指南是从 500mg 起步逐步加到 2000mg）。</p>
+<p>第三，<strong>缺少监测和检查推荐</strong>。真实指南要求定期查 HbA1c、肾功能、眼底检查等，Synthea 虽然在就诊时会记录 HbA1c，但没有显式地在 CarePlan 里列出推荐的检查项目和频率。</p>
+<p>第四，<strong>不考虑禁忌症和药物交互</strong>。模块里没有"如果 eGFR &lt; 30 不开二甲双胍"这类安全约束，胰岛素的触发条件简化成了只看有没有糖尿病肾病。</p>
+<h2>对你项目的影响</h2>
+<p>Synthea 的输出<strong>可以作为方向性的 ground truth</strong>——评估 agent 有没有在正确的时间开出正确类别的药（比如 severity 2 的患者是不是开了二甲双胍）。但它<strong>不够精细</strong>，没法评估 agent 的个体化决策能力（比如考虑合并症选择不同的二线药）、剂量调整推理、安全性校验（禁忌症检查）这些更有价值的能力。</p>
+<p>所以我的建议是<strong>用 Synthea 作为数据基础，但你需要自己增强 ground truth</strong>。具体做法是：用 Synthea 生成患者数据（诊断、检验值、病史等作为输入），然后针对你选的几个疾病，基于临床指南手写或用 LLM 辅助生成更精细的标准治疗方案作为评估基准。Synthea 模块的 JSON 逻辑可以作为起点，你在它的基础上增加个体化分支、剂量逻辑和安全约束即可。</p></section>
+<section class="note-section" id="常见数据来源与验证方法"><h1>常见数据来源与验证方法</h1><h2>该领域常用数据集全景</h2>
+<p>这些数据集大致分成<strong>三类</strong>，每类的用途和 ground truth 性质完全不同：</p>
+<hr />
+<h3>第一类：真实EHR数据库（原始临床记录）</h3>
+<p>这是最核心的一类，但它们<strong>本身不带任何 ground truth label</strong>——它们就是原始的电子病历数据，包含患者的诊断、检验、用药、手术等。你想验证什么任务，需要自己定义 ground truth。</p>
+<table>
+<thead>
+<tr>
+<th>数据集</th>
+<th>规模</th>
+<th>来源</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>MIMIC-III</strong></td>
+<td>~40,000 ICU患者，2001-2012</td>
+<td>波士顿Beth Israel医院，单中心</td>
+<td>该领域<strong>事实标准</strong>，使用最广泛，社区资源最丰富，包含诊断/检验/用药/临床笔记/波形数据</td>
+</tr>
+<tr>
+<td><strong>MIMIC-IV</strong></td>
+<td>~94,000 ICU入院，2008-2019</td>
+<td>同上，更新版</td>
+<td>扩展了MIMIC-III，增加了ICU以外的ED数据，更现代的时间跨度，最全面的公开EHR数据集</td>
+</tr>
+<tr>
+<td><strong>eICU-CRD</strong></td>
+<td>~200,000 ICU入院</td>
+<td>美国208家医院，<strong>唯一的多中心</strong>数据集</td>
+<td>规模最大，多中心优势但数据稀疏度高，各医院报告标准差异大</td>
+</tr>
+<tr>
+<td><strong>AmsterdamUMCdb</strong></td>
+<td>~23,000入院</td>
+<td>荷兰阿姆斯特丹大学医学中心，单中心</td>
+<td>规模最小但患者最危重（ICU死亡率9.9%），生命体征和检验记录频率较高</td>
+</tr>
+<tr>
+<td><strong>HiRID</strong></td>
+<td>~33,000入院</td>
+<td>瑞士伯尔尼大学医院</td>
+<td><strong>时间分辨率最高</strong>（心率约30次/小时），适合需要高频时序数据的研究</td>
+</tr>
+<tr>
+<td><strong>EHRSHOT</strong></td>
+<td>6,739患者</td>
+<td>斯坦福医学中心</td>
+<td><strong>纵向数据</strong>，覆盖所有科室（不止ICU），定义了15个few-shot分类任务</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关于 ground truth 的关键理解</strong>：这些 EHR 数据库<strong>没有预定义的"正确治疗方案"</strong>标签。数据里记录的是医生<strong>实际做了什么</strong>（开了什么药、做了什么检查），而不是<strong>应该做什么</strong>。研究者需要根据自己的研究问题来定义评估基准。常见做法包括：</p>
+<p>用<strong>实际临床结局</strong>作为 ground truth（比如死亡率预测：患者是否死亡就是 label）。用<strong>人工标注的 SQL 查询</strong>作为 ground truth（EHRAgent 的做法：人写 gold SQL，agent 的查询结果跟 gold SQL 的结果比对）。用<strong>人类医生编写的任务和答案</strong>作为 ground truth（MedAgentBench 的做法：300个任务由斯坦福医生手写参考答案和验证规则）。</p>
+<hr />
+<h3>第二类：医学考试/问答数据集（自带标准答案）</h3>
+<p>这类数据集来自标准化考试或医学文献，<strong>天然自带 ground truth</strong>，但它们是<strong>静态选择题</strong>，不涉及与EHR系统的交互。</p>
+<table>
+<thead>
+<tr>
+<th>数据集</th>
+<th>规模</th>
+<th>内容</th>
+<th>Ground Truth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>MedQA (USMLE)</strong></td>
+<td>~12,700题</td>
+<td>美国执照考试风格的临床vignette + 4/5选项</td>
+<td>标准答案（选择题）</td>
+</tr>
+<tr>
+<td><strong>MedMCQA</strong></td>
+<td>~193,000题</td>
+<td>印度医学入学考试题，21个科目</td>
+<td>标准答案（选择题）</td>
+</tr>
+<tr>
+<td><strong>PubMedQA</strong></td>
+<td>~1,000题</td>
+<td>基于PubMed摘要的yes/no/maybe问答</td>
+<td>标准答案</td>
+</tr>
+<tr>
+<td><strong>MMLU (医学子集)</strong></td>
+<td>~1,800题</td>
+<td>覆盖解剖/药理/临床知识等6个医学方向</td>
+<td>标准答案</td>
+</tr>
+<tr>
+<td><strong>NEJM Case Challenges</strong></td>
+<td>数百例</td>
+<td>新英格兰医学杂志的诊断谜题</td>
+<td>最终诊断</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Agent Hospital</strong> 做外部验证时用的就是 MedQA subset。这类数据集评估的是<strong>医学知识</strong>，不是agent与EHR交互的能力。</p>
+<hr />
+<h3>第三类：合成/构建的Agent评估环境</h3>
+<p>这类是<strong>专门为评估 agent 而构建</strong>的，带有明确的任务定义和评判标准。</p>
+<table>
+<thead>
+<tr>
+<th>数据集/环境</th>
+<th>规模</th>
+<th>构建方式</th>
+<th>Ground Truth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>MedAgentBench</strong> (斯坦福, 2025)</td>
+<td>100患者，300任务</td>
+<td>真实EHR数据 + 人类医生编写任务 + FHIR环境</td>
+<td>人工 reference solution + rule-based checks</td>
+</tr>
+<tr>
+<td><strong>AgentClinic</strong> (2024)</td>
+<td>MedQA/NEJM病例</td>
+<td>多Agent模拟临床交互</td>
+<td>原始病例的标准诊断</td>
+</tr>
+<tr>
+<td><strong>Agent Hospital</strong> (清华, 2024)</td>
+<td>8种呼吸疾病，10,000模拟病例</td>
+<td>LLM生成患者 + 知识库预设疾病模板</td>
+<td>预定义的疾病模板（症状/诊断/治疗）</td>
+</tr>
+<tr>
+<td><strong>Synthea</strong></td>
+<td>可任意生成</td>
+<td>基于疾病状态转移机的合成数据</td>
+<td>模块自带的 CarePlan/MedicationRequest</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>对你的项目的核心结论</h2>
+<p>MIMIC 确实是<strong>该领域的黄金标准数据集</strong>，但它的优势在于真实性和社区认可度，<strong>并不自带你需要的那种 ground truth</strong>。对于你的临床决策支持 agent，情况是：</p>
+<p><strong>用 MIMIC 的好处</strong>：审稿人/读者立刻认可数据质量，真实患者数据比合成数据更有说服力。<strong>用 MIMIC 的问题</strong>：它记录的是医生实际行为而不是标准治疗方案，不同医生对同一患者可能有不同的合理决策，所以"实际用药记录"不能直接当成 ground truth（可能有次优决策）。而且需要 CITI 认证和数据使用协议才能访问。</p>
+<p><strong>用 Synthea 的好处</strong>：免费无门槛，可控可重复，自带基于指南的治疗记录作为粗粒度 ground truth，可以任意生成规模。<strong>用 Synthea 的问题</strong>：合成数据，审稿人可能质疑临床真实性。</p></section>
+<section class="note-section" id="obsidian"><h1>obsidian</h1><p>我正在学习打造一个属于自己的obsidian笔记系统，我认为想要成为一个每天进步的人，每天做记录是必不可少的，在记录的过程中就会自然而然的进行反思或者产生新的想法。下一步是融入llm类似于<span class="broken-link">claudecode</span>这种工具来补充我的背景context，我一直认为llm的最后一公里就是无法拿到用户的context，如果有了用户的context，那么我认为以llm目前的智力和进化速度，完美回答出用户的问题会变得更加简单，效果会变得更加简洁。<br />
+同时这不仅仅是关于记录和反思，更加关乎于用你自己的语言重新理解这个世界进行产出。当你保持每天的高强度输出的时候，你对你当下正在做的事情会有更深刻的感悟和体验。你的觉察能力会变得更灵敏，这是我最近的感受。当你的觉察次数和频率正在上升的时候，你活在正念或者感受当下的力量的时候就会更多，整个世界时间运行的帧数就会变得更多，你会感受到时间的流速正在变慢，你会感觉一天能干好多事情。</p></section>
+  </div>
+</main>
+
+<script>
+const history = [];
+
+function showNote(slug) {
+  // 记录历史
+  const current = document.querySelector('.note-section.active');
+  if (current && current.id !== slug) {
+    history.push(current.id);
+  }
+
+  // 切换显示
+  document.querySelectorAll('.note-section').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(slug);
+  if (target) {
+    target.classList.add('active');
+    document.getElementById('main').scrollTop = 0;
+  }
+
+  // 更新侧边栏高亮
+  document.querySelectorAll('.tree-leaf').forEach(el => el.classList.remove('active'));
+  const leaf = document.querySelector(`.tree-leaf[data-slug="${slug}"]`);
+  if (leaf) leaf.classList.add('active');
+
+  // 更新面包屑
+  updateBreadcrumb(slug);
+
+  // 移动端关闭侧边栏
+  document.getElementById('sidebar').classList.remove('open');
+
+  // 更新 URL hash
+  window.location.hash = slug;
+}
+
+function goBack() {
+  if (history.length > 0) {
+    const prev = history.pop();
+    // 不记录到 history 中
+    document.querySelectorAll('.note-section').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById(prev);
+    if (target) target.classList.add('active');
+    document.querySelectorAll('.tree-leaf').forEach(el => el.classList.remove('active'));
+    const leaf = document.querySelector(`.tree-leaf[data-slug="${prev}"]`);
+    if (leaf) leaf.classList.add('active');
+    updateBreadcrumb(prev);
+    document.getElementById('main').scrollTop = 0;
+    window.location.hash = prev;
+  }
+}
+
+function updateBreadcrumb(slug) {
+  const bc = document.getElementById('breadcrumb');
+  const section = document.getElementById(slug);
+  const title = section ? section.querySelector('h1').textContent : slug;
+  let html = '';
+  if (history.length > 0) {
+    html += '<button class="back-btn" onclick="goBack()">← 返回</button>';
+    html += '<span>|</span>';
+  }
+  html += `<span>${title}</span>`;
+  bc.innerHTML = html;
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// 初始化：根据 URL hash 显示对应笔记
+window.addEventListener('load', () => {
+  const hash = window.location.hash.slice(1);
+  if (hash) {
+    showNote(decodeURIComponent(hash));
+  } else {
+    // 默认显示第一个入口笔记
+    const first = document.querySelector('.note-section');
+    if (first) showNote(first.id);
+  }
+});
+</script>
+
+</body>
+</html>
