@@ -583,11 +583,11 @@ hr {
 <p><strong>什么都不用</strong>：基线水平。<strong>只用记录库</strong>：有提升，但有限。<strong>只用经验库</strong>：也有提升，跟单用记录库差不多量级。<strong>两个库都用</strong>：效果最好，93.06%（GPT-4），超越人类专家的约 87%。<br />
 这说明两个库提供的是<strong>不同维度的互补信息</strong>。</p></section>
 <section class="note-section" id="医疗agent验证系统"><h1>医疗agent验证系统</h1><h2>问题：Synthea有 Ground Truth 吗？</h2>
-<p>Synthea 生成的 FHIR Bundle 中包含 CarePlan、MedicationRequest、Procedure 等资源 <a href="https://mitre.github.io/fhir-for-research/modules/synthea-overview">Mitre</a>，这意味着<strong>Synthea 生成的数据本身就包含了"这个患者实际接受了什么治疗"的完整记录</strong>。</p>
-<p>具体来说，Synthea 的疾病模块是状态转移机，支持 MedicationOrder、CarePlanStart、Procedure 等临床状态 <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7651916/">PubMed Central</a>，每个疾病模块按照临床护理路径定义了患者应该接受的治疗。这些模块是基于临床护理协议、CDC/NIH 等机构的公开疾病发生率和流行率统计数据以及临床专家反馈创建的 <a href="https://mitre.github.io/fhir-for-research/modules/synthea-overview">Mitre</a>。所以 Synthea 输出的 CarePlan 和 MedicationRequest <strong>就是根据临床指南和统计数据规则生成的"标准治疗路径"</strong>。</p>
+<p>Synthea 生成的 FHIR Bundle 中包含 CarePlan、MedicationRequest、Procedure 等资源 Mitre这意味着<strong>Synthea 生成的数据本身就包含了"这个患者实际接受了什么治疗"的完整记录</strong>。</p>
+<p>具体来说，Synthea 的疾病模块是状态转移机，支持 MedicationOrder、CarePlanStart、Procedure 等临床状态 PubMed Central，每个疾病模块按照临床护理路径定义了患者应该接受的治疗。这些模块是基于临床护理协议、CDC/NIH 等机构的公开疾病发生率和流行率统计数据以及临床专家反馈创建的 Mitre。所以 Synthea 输出的 CarePlan 和 MedicationRequest <strong>就是根据临床指南和统计数据规则生成的"标准治疗路径"</strong>。</p>
 <p>这是一个<strong>天然的 ground truth 来源</strong>，但有几个限制：</p>
 <p><strong>可以直接用的部分</strong>：Synthea 为每个患者生成了完整的 MedicationRequest（开了什么药）、CarePlan（护理计划包含哪些活动）、Procedure（做了什么检查/手术），这些都可以作为你评估 agent 输出的参照。你可以把一个患者的数据分为两部分——把诊断、检验和病史作为输入给 agent，把 CarePlan/MedicationRequest/Procedure 作为 ground truth 来评估 agent 的输出。</p>
-<p><strong>限制</strong>：Synthea 生成的是基本 FHIR 资源，包含必填字段但很少填充可选字段 <a href="https://mitre.github.io/fhir-for-research/modules/synthea-overview">Mitre</a>。这意味 CarePlan 比较粗粒度——它会告诉你"这个糖尿病患者的护理计划包含血糖管理和用药"，但可能不会精确到"二甲双胍每日两次每次 500mg"这种具体剂量层面。MedicationRequest 会有药物名称和编码，但剂量细节可能不完整。所以<strong>Synthea 适合做方案方向性的验证</strong>（开的药对不对、做的检查对不对），但可能不够支撑精确剂量层面的验证。</p>
+<p><strong>限制</strong>：Synthea 生成的是基本 FHIR 资源，包含必填字段但很少填充可选字段 Mitre。这意味 CarePlan 比较粗粒度——它会告诉你"这个糖尿病患者的护理计划包含血糖管理和用药"，但可能不会精确到"二甲双胍每日两次每次 500mg"这种具体剂量层面。MedicationRequest 会有药物名称和编码，但剂量细节可能不完整。所以<strong>Synthea 适合做方案方向性的验证</strong>（开的药对不对、做的检查对不对），但可能不够支撑精确剂量层面的验证。</p>
 <p><strong>补充方案</strong>：可以在 Synthea 的基础上做一层增强——用临床指南规则引擎为每个 Synthea 患者补充生成更精细的 ground truth（具体剂量、优先级排序、禁忌原因等）。两层 ground truth：Synthea 原生的粗粒度治疗记录 + 基于指南规则引擎生成的细粒度标准方案。Agent 的输出可以在两个粒度上分别评估。</p>
 <hr />
 <h2>常见数据来源与验证方法</h2>
@@ -757,9 +757,8 @@ hr {
 </ol>
 <hr />
 <h2>Synthea</h2>
-<p>可以，我直接来操作。先把 Synthea 克隆下来看看结构。</p>
 <h2>Synthea 确实有 Ground Truth，但粒度有限</h2>
-<p><strong>有什么（可以当 ground truth 的）：</strong></p>
+<p><strong>可以当 ground truth 的：</strong></p>
 <p>Synthea 的糖尿病模块定义了一套完整的<strong>阶梯用药规则</strong>，基于 HbA1c 严重程度分级来决定用什么药。具体来说：</p>
 <p>HbA1c ≤ 5.7% → 正常，不开药。HbA1c 5.7-6.5% → 前驱糖尿病（severity 0），只开 CarePlan（饮食+运动）。HbA1c 6.5-7.5% → 糖尿病 severity 1，暂不开药。HbA1c 7.5-9.0% → severity 2，开<strong>二甲双胍 500mg 缓释片</strong>（单药治疗）。HbA1c &gt; 9.0% 首次 → severity 3，加<strong>利拉鲁肽 6mg/mL 注射笔</strong>（双药治疗）。HbA1c &gt; 9.0% 持续一年以上 → severity 4，再加<strong>卡格列净 100mg 口服片</strong>（三药治疗）。如果合并糖尿病肾病 → 转<strong>胰岛素</strong>（先基础胰岛素 Humulin，再转餐时胰岛素 Humalog）。</p>
 <p>CarePlan 也有结构化内容：包括糖尿病饮食、运动治疗两个活动，以及 HbA1c &lt; 7%、空腹血糖 &lt; 108 mg/dL、血压 &lt; 140/90 三个目标。</p>
