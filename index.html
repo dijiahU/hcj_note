@@ -8,18 +8,18 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --bg-primary: #1e1e2e;
-  --bg-secondary: #181825;
-  --bg-surface: #262637;
-  --text-primary: #cdd6f4;
-  --text-secondary: #a6adc8;
-  --text-muted: #6c7086;
-  --accent: #cba6f7;
-  --accent-hover: #b4befe;
-  --border: #313244;
-  --link: #89b4fa;
-  --link-hover: #b4befe;
-  --code-bg: #1e1e2e;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f6f6;
+  --bg-surface: #eeeef0;
+  --text-primary: #1a1a1a;
+  --text-secondary: #555555;
+  --text-muted: #999999;
+  --accent: #705dcf;
+  --accent-hover: #8b7bd4;
+  --border: #e0e0e0;
+  --link: #705dcf;
+  --link-hover: #5b48b0;
+  --code-bg: #f5f5f5;
   --sidebar-width: 280px;
 }
 
@@ -203,7 +203,7 @@ code {
   padding: 2px 6px;
   border-radius: 3px;
   font-size: 0.9em;
-  color: #f38ba8;
+  color: #c7254e;
   font-family: "SF Mono", "Fira Code", monospace;
 }
 
@@ -371,7 +371,7 @@ hr {
 <p>这个领域与FHIR API的集成最紧密，成熟度也最高（如MedAgentBench已有标准化benchmark）。</p>
 <p><strong>7. 通用系统工作流 (General System Workflow)</strong></p>
 <p>接收输入（症状、测试数据、研究目标、服务指标）→ 意图解析与实体提取（诊断、摘要、设计）→ 知识检索（PubMed、EHR知识图谱、工具API）→ 推理与决策（CoT、ToT、ReAct、多步规划）→ 输出生成（报告、建议、协议、对话、优化方案）→ 反馈迭代与人工审查</p>
-<p>这其实是前六个领域的<strong>抽象统一框架</strong>，论文也指出所有领域共享"输入解析→知识检索→多步推理→输出生成→人工反馈"这个workflow backbone。</p>
+<p>这是前六个领域的<strong>抽象统一框架</strong>，论文也指出所有领域共享"输入解析→知识检索→多步推理→输出生成→人工反馈"这个workflow backbone。</p>
 <p>其中成熟度和可行性高的是疾病诊断和临床决策支持这两个。</p>
 <p>常见的agent可调用工具的分类有：<br />
 <img src="images/截屏2026-02-25 14.21.14.png" alt="截屏2026-02-25 14.21.14.png" class="note-image"></p>
@@ -380,7 +380,8 @@ hr {
 - 临床决策支持中的"Retrieve Guidelines and Similar Cases" → 用到的是Knowledge类的Retrieval Augmentation工具<br />
 - 自动化研究中的"Call Lab Tools or Code Interpreters" → 用到的是Numerical Analysis类的Code Generation工具<br />
 - 诊断流程中如果需要看影像 → 用到Multi-Modal类的Image Comprehension<br />
-- 文献分析中检查引用可靠性 → 用到Trustworthiness类的Factual Hallucination检测</p></section>
+- 文献分析中检查引用可靠性 → 用到Trustworthiness类的Factual Hallucination检测<br />
+具体详见<a href="#医疗agent工具系统" class="wikilink" onclick="showNote('医疗agent工具系统')">医疗agent工具系统</a></p></section>
 <section class="note-section" id="医疗agent工具系统"><h1>医疗agent工具系统</h1><p>完整的工具清单</p>
 <p>按功能层级列出你整个系统可能需要的所有工具：</p>
 <h3>第一层：FHIR 患者数据获取（输入都是 patient_id）</h3>
@@ -564,64 +565,35 @@ hr {
 <section class="note-section" id="医疗agent验证系统"><h1>医疗agent验证系统</h1><h2>问题：<a href="#Synthea" class="wikilink" onclick="showNote('Synthea')">Synthea</a>有 Ground Truth 吗？</h2>
 <p>Synthea 生成的 FHIR Bundle 中包含 CarePlan、MedicationRequest、Procedure 等资源 <a href="https://mitre.github.io/fhir-for-research/modules/synthea-overview">Mitre</a>，这意味着<strong>Synthea 生成的数据本身就包含了"这个患者实际接受了什么治疗"的完整记录</strong>。</p>
 <p>具体来说，Synthea 的疾病模块是状态转移机，支持 MedicationOrder、CarePlanStart、Procedure 等临床状态 <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7651916/">PubMed Central</a>，每个疾病模块按照临床护理路径定义了患者应该接受的治疗。这些模块是基于临床护理协议、CDC/NIH 等机构的公开疾病发生率和流行率统计数据以及临床专家反馈创建的 <a href="https://mitre.github.io/fhir-for-research/modules/synthea-overview">Mitre</a>。所以 Synthea 输出的 CarePlan 和 MedicationRequest <strong>就是根据临床指南和统计数据规则生成的"标准治疗路径"</strong>。</p>
-<p>这对你来说是一个<strong>天然的 ground truth 来源</strong>，但需要注意几个限制：</p>
+<p>这是一个<strong>天然的 ground truth 来源</strong>，但有几个限制：</p>
 <p><strong>可以直接用的部分</strong>：Synthea 为每个患者生成了完整的 MedicationRequest（开了什么药）、CarePlan（护理计划包含哪些活动）、Procedure（做了什么检查/手术），这些都可以作为你评估 agent 输出的参照。你可以把一个患者的数据分为两部分——把诊断、检验和病史作为输入给 agent，把 CarePlan/MedicationRequest/Procedure 作为 ground truth 来评估 agent 的输出。</p>
-<p><strong>需要注意的限制</strong>：Synthea 生成的是基本 FHIR 资源，包含必填字段但很少填充可选字段 <a href="https://mitre.github.io/fhir-for-research/modules/synthea-overview">Mitre</a>。这意味着 CarePlan 可能比较粗粒度——它会告诉你"这个糖尿病患者的护理计划包含血糖管理和用药"，但可能不会精确到"二甲双胍每日两次每次 500mg"这种具体剂量层面。MedicationRequest 会有药物名称和编码，但剂量细节可能不完整。所以<strong>Synthea 适合做方案方向性的验证</strong>（开的药对不对、做的检查对不对），但可能不够支撑精确剂量层面的验证。</p>
-<p><strong>建议的补充方案</strong>：你可以在 Synthea 的基础上做一层增强——用临床指南规则引擎为每个 Synthea 患者补充生成更精细的 ground truth（具体剂量、优先级排序、禁忌原因等）。这样你就有了两层 ground truth：Synthea 原生的粗粒度治疗记录 + 你基于<a href="#指南规则引擎" class="wikilink" onclick="showNote('指南规则引擎')">指南规则引擎</a>生成的细粒度标准方案。Agent 的输出可以在两个粒度上分别评估。</p>
+<p><strong>限制</strong>：Synthea 生成的是基本 FHIR 资源，包含必填字段但很少填充可选字段 <a href="https://mitre.github.io/fhir-for-research/modules/synthea-overview">Mitre</a>。这意味 CarePlan 比较粗粒度——它会告诉你"这个糖尿病患者的护理计划包含血糖管理和用药"，但可能不会精确到"二甲双胍每日两次每次 500mg"这种具体剂量层面。MedicationRequest 会有药物名称和编码，但剂量细节可能不完整。所以<strong>Synthea 适合做方案方向性的验证</strong>（开的药对不对、做的检查对不对），但可能不够支撑精确剂量层面的验证。</p>
+<p><strong>补充方案</strong>：可以在 Synthea 的基础上做一层增强——用临床指南规则引擎为每个 Synthea 患者补充生成更精细的 ground truth（具体剂量、优先级排序、禁忌原因等）。两层 ground truth：Synthea 原生的粗粒度治疗记录 + 基于<a href="#指南规则引擎" class="wikilink" onclick="showNote('指南规则引擎')">指南规则引擎</a>生成的细粒度标准方案。Agent 的输出可以在两个粒度上分别评估。</p>
 <p><a href="#常见数据来源与验证方法" class="wikilink" onclick="showNote('常见数据来源与验证方法')">常见数据来源与验证方法</a></p>
 <h2>各论文的验证方式对比</h2>
-<p>这几篇核心论文的验证策略其实走的是<strong>完全不同的路线</strong>，可以归纳为四种范式：</p>
+<p>这几篇核心论文的验证策略可以归纳为四种：</p>
 <hr />
 <h3>范式一：模拟环境自验证 + 现成Benchmark迁移（Agent Hospital）</h3>
 <p>Agent Hospital 的验证分两步。<strong>内部验证</strong>：在模拟医院里用LLM生成的患者跑10,000个病例，每个病例的"正确答案"来自知识库里预设好的疾病信息（症状、检查结果、诊断、治疗方案都是从医学知识库提前定义好的），所以 ground truth 本质上是<strong>人工预定义的疾病模板</strong>——8种呼吸系统疾病，每种有对应的标准诊断和三种治疗方案。agent 的输出跟这个模板比对，算准确率。<strong>外部验证</strong>：把在模拟环境里进化后的 agent 直接拿去做 MedQA（USMLE 执照考试题），这里的 ground truth 就是考试的标准答案。</p>
-<p>关键点：它<strong>没有真实临床数据</strong>，ground truth 是知识库模板 + 标准化考试题。验证的是"agent 能不能学会跟预设答案一致"。</p>
+<p>它<strong>没有真实临床数据</strong>，ground truth 是知识库模板 + 标准化考试题。验证的是"agent 能不能学会跟预设答案一致"。</p>
 <hr />
 <h3>范式二：真实EHR + Gold SQL查询（EHRAgent）</h3>
 <p>EHRAgent 用的是 MIMIC-III 和 eICU 这两个真实ICU数据库。验证任务是<strong>临床问答</strong>——给一个自然语言问题（比如"多少患者做了临时气管切开？"），agent 需要生成 Python 代码查数据库得到答案。Ground truth 是由<strong>人工编写的 gold standard SQL 查询</strong>的执行结果。评估指标是 success rate（agent 的答案跟 gold SQL 的答案是否一致）。</p>
-<p>关键点：ground truth 是<strong>人写的SQL + 真实数据库执行结果</strong>，不涉及医学推理判断，验证的是"agent 能不能正确查询 EHR 数据"。</p>
+<p>ground truth 是<strong>人写的SQL + 真实数据库执行结果</strong>，不涉及医学推理判断，验证的是"agent 能不能正确查询 EHR 数据"。</p>
 <hr />
 <h3>范式三：FHIR交互环境 + 人工标注任务（MedAgentBench）</h3>
 <p>MedAgentBench 来自斯坦福，构建了一个基于真实患者数据的 FHIR 兼容环境，100个患者 profile（超过700,000个数据元素）。300个临床任务由<strong>人类医生编写</strong>，分10个类别。验证方式分两类：query 类任务（GET请求），用 agent 的返回值跟<strong>人工写的 reference solution</strong> 比对；action 类任务（POST请求），用<strong>人工编写的 rule-based sanity checks</strong> 验证 POST payload 的正确性。</p>
-<p>关键点：ground truth 全是<strong>人类医生手工标注</strong>的，任务和评分标准都由临床专家设计。最好的模型（Claude 3.5 Sonnet v2）也只达到 69.67% success rate。</p>
+<p>ground truth 全是<strong>人类医生手工标注</strong>的，任务和评分标准都由临床专家设计。最好的模型（Claude 3.5 Sonnet v2）也只达到 69.67% success rate。</p>
 <hr />
 <h3>范式四：多Agent模拟诊疗 + 多维评估（AgentClinic）</h3>
 <p>AgentClinic 用四个 LLM agent（医生、患者、检查员、主持人）模拟临床诊疗过程。病例来自 MedQA（USMLE）和 NEJM Case Challenges。Ground truth 是<strong>原始病例的标准诊断</strong>。评估维度不止诊断准确率，还包括患者的 compliance、confidence、follow-up willingness 等以患者为中心的指标。还加入了认知偏见实验。</p>
-<p>关键点：ground truth 是<strong>现成医学考试/病例集的标准答案</strong>，创新在于把静态QA变成了动态交互评估。</p>
-<hr />
-<h2>对你项目的启示</h2>
-<table>
-<thead>
-<tr>
-<th>维度</th>
-<th>你的场景（临床决策支持）</th>
-<th>最接近的范式</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>数据来源</td>
-<td>Synthea合成数据</td>
-<td>类似Agent Hospital（合成），但你的数据更结构化</td>
-</tr>
-<tr>
-<td>任务类型</td>
-<td>生成治疗方案</td>
-<td>比所有范式都<strong>更难评估</strong>，因为输出是开放式方案</td>
-</tr>
-<tr>
-<td>Ground truth</td>
-<td>Synthea自带的CarePlan+MedicationRequest</td>
-<td>粗粒度类似Agent Hospital的预设模板</td>
-</tr>
-</tbody>
-</table>
-<p><strong>你其实可以组合用多种验证方式</strong>：</p>
+<p>ground truth 是<strong>现成医学考试/病例集的标准答案</strong>，创新在于把静态QA变成了动态交互评估。</p>
+<p><strong>可以组合用多种验证方式</strong>：</p>
 <ol>
 <li><strong>Synthea 自带的粗粒度 ground truth</strong>（类似 Agent Hospital 的知识库模板）——验证药物方向是否正确</li>
 <li><strong>临床指南规则引擎校验</strong>（类似 MedAgentBench 的 rule-based sanity checks）——验证方案合规性</li>
 <li><strong>LLM-as-Judge</strong>（类似 AgentClinic 的多维评估）——评安全性、完整性、效率等软指标</li>
-</ol>
-<p>这三层组合起来，比大多数现有论文的验证方式都更扎实。MedAgentBench 那种全人工标注的路线质量最高但成本最大，对你来说选 3-5 个疾病做少量人工标注作为补充验证就够了。</p></section>
+</ol></section>
 <section class="note-section" id="融入ai的obsidian笔记软件"><h1>融入ai的obsidian笔记软件</h1><p>目前市面上所有的笔记软件在融入ai的场景都几乎没有，或者说使用难度很高。我们可以在<a href="#obsidian" class="wikilink" onclick="showNote('obsidian')">obsidian</a>的基础上简化融入像<span class="broken-link">claudecode</span>这种工具集成进来，让用户以最简单丝滑的方式体验ai，打造自己的数字分身，成为自己的私人教师，又或者是thinking partner等等。<br />
 目前已有的ai都是以终端或者插件的形式，可以做成就放在主页面内的一个重要功能，随着用户书写的文字<span class="broken-link">context</span>越多，你的ai就会越懂你，甚至能跨越笔记软件的范畴成为你的一个私人管家。想象一下当你的openclaw能够有你生活的很多context，知道你最近在干什么项目，在想什么问题，经历了什么，明天的todolist，这样的话是不是就有打造一个更加智能贴心的私人贾维斯呢。只不过这个贾维斯战衣的贴合人体是通过用户不断记录笔记或者是导入别的平台笔记进来形成的context。<br />
 目前我的看法是这个方案难点在于如何让用户不断的记录自己的生活，让用户培养一个随时写笔记的习惯。剩下的别的部分其实反而倒是没那么难。<br />
@@ -631,7 +603,10 @@ hr {
 <section class="note-section" id="疾病诊断"><h1>疾病诊断</h1><p>本质是一个根据现象推理病因的过程，先通过调用工具收集信息，然后进行推理得到结果。从症状出发，推导出"这是什么病"。<br />
 <strong>详细流程</strong>：</p>
 <ol>
-<li><a href="#症状描述和体征输入" class="wikilink" onclick="showNote('症状描述和体征输入')">症状描述和体征输入</a>：患者<a href="#描述症状" class="wikilink" onclick="showNote('描述症状')">描述症状</a>，或从患者的病历库中通过调用工具提取（FHIR)</li>
+<li>症状描述和体征输入：患者<a href="#描述症状" class="wikilink" onclick="showNote('描述症状')">描述症状</a>，或从患者的病历库中通过调用工具提取（FHIR)<br />
+具体实现：</li>
+<li><strong>患者EHR和检查数据输入</strong>：从电子健康记录系统（通常通过FHIR API）获取患者的完整数据<br />
+该过程难点在于，EHR资源一般都是多跳链接的格式数据，Agent需要在FHIR的图结构数据中导航，跨多个资源类型链式查询。MedAgentBench就是专门为这个场景建的benchmark，用100个合成患者和300个临床任务来测试Agent能否正确操作FHIR API。</li>
 <li><a href="#NER实体识别与匹配" class="wikilink" onclick="showNote('NER实体识别与匹配')">NER实体识别与匹配</a>：根据得到的信息提取关键信息例如症状，然后调用外部工具进行知识库中的疾病-症状映射进行匹配</li>
 <li><strong>鉴别诊断列表检索</strong>：根据匹配结果，从知识库中拉出一组候选疾病（鉴别诊断）</li>
 <li><a href="#Tree-of-Thought诊断探索" class="wikilink" onclick="showNote('Tree-of-Thought诊断探索')">Tree-of-Thought诊断探索</a>：这是核心推理步骤。不同于简单的线性推理，ToT会<strong>分支式地</strong>同时考虑多个诊断假设，评估每条路径的合理性，逐步排除不太可能的候选</li>
@@ -663,10 +638,10 @@ hr {
 <p>症状-疾病匹配的实现方式主要有几种路径，从简单到复杂：</p>
 <h2>基于医学知识图谱的匹配</h2>
 <p>这是最直接的方式。医学领域有现成的大型本体和知识库，比如<strong>UMLS（统一医学语言系统）</strong>、<strong>SNOMED CT</strong>、<strong>ICD编码体系</strong>等，它们内部维护了疾病与症状之间的关联关系。</p>
-<p>具体流程是：NER提取出症状实体后，先做<strong>实体链接（Entity Linking）</strong>，把自由文本中的症状映射到知识库的标准化概念上。比如患者说"脑壳疼"，需要链接到UMLS中的标准概念"Headache (C0018681)"。然后在知识图谱中查询这个概念关联的所有疾病节点，对多个症状的查询结果取交集或加权合并，就得到了候选疾病列表。</p>
+<p>具体流程是：NER提取出症状实体后，先做<strong>实体链接</strong>，把自由文本中的症状映射到知识库的标准化概念上。比如患者说"脑壳疼"，需要链接到UMLS中的标准概念"Headache (C0018681)"。然后在知识图谱中查询这个概念关联的所有疾病节点，对多个症状的查询结果取交集或加权合并，就得到了候选疾病列表。</p>
 <p>这一步的难点在于实体链接——患者的口语化表达、缩写、同义词都需要正确映射到标准术语。</p>
 <h2>基于嵌入的语义匹配</h2>
-<p>把症状和疾病都编码成向量，在嵌入空间中计算相似度。论文中提到的RareAgents就是这种思路，它用<strong>患者嵌入（patient embeddings）</strong>去检索最相似的历史病例。具体做法是把当前患者的症状集合编码成一个向量，然后在罕见病数据库中做top-k近邻检索，找到症状模式最相似的历史诊断案例。</p>
+<p>把症状和疾病都编码成向量，在嵌入空间中计算相似度。论文中提到的RareAgents就是这种思路，它用<strong>患者嵌入</strong>去检索最相似的历史病例。具体做法是把当前患者的症状集合编码成一个向量，然后在罕见病数据库中做top-k近邻检索，找到症状模式最相似的历史诊断案例。</p>
 <p>这种方法的优势是能捕捉模糊的语义相似性，不需要精确的术语匹配。</p>
 <h2>基于概率模型的匹配</h2>
 <p>更传统的医学诊断系统用贝叶斯推理。核心思想是：已知各种疾病出现各种症状的条件概率 P(症状|疾病)，通过贝叶斯公式反推 P(疾病|观察到的症状集合)。每个候选疾病都会得到一个后验概率，这也是最终置信度分数的来源之一。</p>
@@ -677,7 +652,7 @@ hr {
 <p><strong>知识时效性问题。</strong> LLM的知识截止于训练数据，而医学知识持续更新。新的疾病定义、诊断标准变更、新发传染病等都不在LLM的知识范围内。外部知识库（如UMLS）是持续维护更新的。</p>
 <p><strong>可验证性问题。</strong> LLM直接输出"这可能是X病"时，你无法追溯它的依据是什么。但如果是从UMLS查出来的关联，每条匹配都有明确的来源和编码，可以被临床医生审查和验证。论文把这归入Trustworthiness维度。</p>
 <p><strong>覆盖度问题。</strong> 罕见病是典型例子。LLM训练数据中罕见病的语料非常少，内部知识严重不足。论文提到的RareAgents和DeepRare都是专门解决这个问题的——必须借助专门的罕见病数据库。</p>
-<p>所以现实中的做法通常是<strong>两者结合</strong>：用外部工具做结构化的症状-疾病匹配提供候选列表（确保准确性和可追溯性），再让LLM做更高层的综合推理（利用其强大的上下文理解和推理能力）。这正是论文强调的Agent范式相比纯LLM的核心优势。</p></section>
+<p>所以现实中的做法通常是<strong>两者结合</strong>：用外部工具做结构化的症状-疾病匹配提供候选列表（确保准确性和可追溯性），再让LLM做更高层的综合推理（利用其强大的上下文理解和推理能力）。</p></section>
 <section class="note-section" id="Tree-of-Thought诊断探索"><h1>Tree-of-Thought诊断探索</h1><p><strong>标准CoT（链式思考）</strong> 的推理是线性的：症状A+B+C → 可能是疾病X → 验证 → 结论。<br />
 ToT的推理是分支式的：<br />
 <img src="images/Pasted image 20260225151136.png" alt="Pasted image 20260225151136.png" class="note-image"><br />
@@ -782,7 +757,7 @@ GET /AllergyIntolerance?patient=123 → 获取过敏史
 <pre><code>POST /MedicationRequest  → 提交新的用药医嘱（待医生批准）
 POST /ServiceRequest     → 提交检查申请（如建议3个月后复查HbA1c）
 </code></pre>
-<p>当然，这些写入操作在当前系统中都需要经过下一步的人工审批。</p></section>
+<p>这些写入操作在当前系统中都需要经过下一步的人工审批。</p></section>
 <section class="note-section" id="Agent Hospital"><h1>Agent Hospital</h1><h2>MedAgent-Zero 的完整记忆架构</h2>
 <p>Agent Hospital 的核心训练策略叫 <strong>MedAgent-Zero</strong>，它的记忆模块由两个库和一个五步演进流程构成。</p>
 <h3>库一：医疗记录库（Medical Record Library）</h3>
@@ -800,18 +775,12 @@ POST /ServiceRequest     → 提交检查申请（如建议3个月后复查HbA1c
 <p>两组内容一起注入到 LLM 的提示词中，agent 同时看到"类似的成功案例长什么样"和"处理这类问题应该遵循什么原则"，然后生成诊断。</p>
 <p>检索的相似度度量论文没有特别详述，但从上下文推断应该是基于症状/疾病描述的文本相似度。</p>
 <h3>消融实验结果</h3>
-<p>论文做了很清晰的消融（Table 3），四种配置：</p>
+<p>论文做了消融，四种配置：</p>
 <p><strong>什么都不用（vanilla）</strong>：基线水平。<strong>只用记录库</strong>：有提升，但有限。<strong>只用经验库</strong>：也有提升，跟单用记录库差不多量级。<strong>两个库都用</strong>：效果最好，93.06%（GPT-4），超越人类专家的约 87%。</p>
-<p>这说明两个库提供的是<strong>不同维度的互补信息</strong>，缺一不可。</p>
-<p>论文还做了经验积累量的实验（Table 4）：固定用 top-2 经验 + top-2 记录，分别测试从 0/2000/4000/6000/8000 个模拟患者累积的经验库效果。结论是<strong>经验越多准确率越高</strong>，8000 病例的经验库在 GPT-3.5 和 GPT-4 上都是最好的。这验证了经验库的价值随规模增长。</p>
-<h3>用一个类比总结</h3>
-<p>把这个架构类比为一个医学实习生的成长：</p>
-<p><strong>记录库</strong> = 你的<strong>临床病例笔记本</strong>。每次成功处理一个患者，你把完整的病例记下来。下次遇到类似症状的患者，你翻笔记本看"上次那个差不多的情况我是怎么做的"。</p>
-<p><strong>经验库</strong> = 你的<strong>错题反思集</strong>。每次误诊后，你不是简单记住"这个病人我诊断错了"，而是提炼出"以后遇到 X 症状合并 Y 体征时，不要急着下 A 诊断，应该先排除 B 的可能"这类通用原则。而且你会验证这条原则——拿回去看"如果当时我知道这条规则，还会不会犯同样的错"。只有验证有效的规则才留下。</p>
-<p><strong>推理时</strong> = 遇到新患者时，你同时翻<strong>笔记本</strong>找类似病例参考，又翻<strong>错题集</strong>找相关的推理原则，两者结合做出诊断。</p>
-<p>这个设计之所以有效，核心在于两个库覆盖了临床推理中<strong>具象</strong>和<strong>抽象</strong>两个不同的认知层次。记录库提供 pattern matching（这个患者跟谁像），经验库提供 rule-based reasoning（处理这类情况的通用策略）。单独哪一个都不足以应对临床推理的复杂性。</p></section>
+<p>这说明两个库提供的是<strong>不同维度的互补信息</strong>。</p>
+<p>论文还做了经验积累量的实验（Table 4）：固定用 top-2 经验 + top-2 记录，分别测试从 0/2000/4000/6000/8000 个模拟患者累积的经验库效果。结论是<strong>经验越多准确率越高</strong>，8000 病例的经验库在 GPT-3.5 和 GPT-4 上都是最好的。这验证了经验库的价值随规模增长。</p></section>
 <section class="note-section" id="指南规则引擎"><h1>指南规则引擎</h1><p>临床指南规则引擎本质上就是把医学临床实践指南（Clinical Practice Guidelines, CPG）从自然语言文本转化为<strong>可计算的 if-then 规则</strong>，让机器能够自动执行指南推荐。</p>
-<p>举个具体例子你就明白了。ADA（美国糖尿病协会）指南里有一条推荐：</p>
+<p>举个具体例子。ADA（美国糖尿病协会）指南里有一条：</p>
 <blockquote>
 <p>"对于新诊断的 2 型糖尿病患者，如果 HbA1c &lt; 9% 且无心血管疾病史，一线治疗推荐二甲双胍单药，起始剂量 500mg 每日一次，逐步增加至 2000mg/天。"</p>
 </blockquote>
@@ -843,11 +812,9 @@ THEN
 <p>CDS Hooks 则定义了触发时机——什么时候调用这些规则（比如医生打开处方界面时触发用药建议）。CQL 引擎（比如开源的 cql-engine）可以直接对着 FHIR 服务器执行这些规则。</p>
 <p><strong>第二种是传统规则引擎路线</strong>，用 Drools 或者 Python 的自定义规则系统。把指南编码成一组规则文件，每条规则有条件部分和动作部分，引擎做前向链推理。这种方式更灵活但不如 CQL 与 FHIR 天然集成。</p>
 <p><strong>第三种是决策表/决策树路线</strong>。把指南简化成结构化的表格，行是条件组合，列是推荐动作。适合分支相对清晰的指南（比如高血压用药阶梯），但难以处理复杂的多条件交叉场景。</p>
-<h2>在你的系统中它扮演什么角色</h2>
 <p>回到你的 agent 架构，规则引擎在两个环节发挥作用：</p>
 <p><strong>作为 agent 可调用的工具</strong>（第三层校验工具中的 <code>validate_against_guidelines</code>）。Agent 生成了一个治疗方案后，调用规则引擎做合规性校验。引擎会逐条检查：这个患者的情况下，agent 推荐的药是不是指南推荐的一线/二线药？剂量在不在合理范围内？有没有遗漏指南要求的必做检查？如果有违反，引擎返回具体是哪条指南规则被违反了，agent 可以据此修正方案。</p>
 <p><strong>作为 ground truth 生成器</strong>。你用 Synthea 生成患者数据后，Synthea 自带的 CarePlan 比较粗。你可以用规则引擎对每个 Synthea 患者跑一遍，根据患者的诊断、检验值、合并症等条件，自动生成一份精细的标准治疗方案作为 ground truth。这样评估 agent 输出时就有一个基于指南的客观参照。</p>
-<h2>现实层面的考量</h2>
 <p>规则引擎的主要难点不在技术实现，而在<strong>规则的编写和维护</strong>。临床指南数量庞大，每条指南有很多分支条件，而且指南每年都在更新。完整编码一个疾病的所有指南推荐是大量的人工工作。</p></section>
 <section class="note-section" id="Synthea"><h1>Synthea</h1><p>可以，我直接来操作。先把 Synthea 克隆下来看看结构。</p>
 <h2>Synthea 确实有 Ground Truth，但粒度有限</h2>
