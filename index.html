@@ -580,9 +580,8 @@ hr {
 <p>检索的相似度度量论文没有特别详述，但从上下文推断应该是基于症状/疾病描述的文本相似度。</p>
 <h3>消融实验结果</h3>
 <p>论文做了消融，四种配置：</p>
-<p><strong>什么都不用（vanilla）</strong>：基线水平。<strong>只用记录库</strong>：有提升，但有限。<strong>只用经验库</strong>：也有提升，跟单用记录库差不多量级。<strong>两个库都用</strong>：效果最好，93.06%（GPT-4），超越人类专家的约 87%。</p>
-<p>这说明两个库提供的是<strong>不同维度的互补信息</strong>。</p>
-<p>论文还做了经验积累量的实验（Table 4）：固定用 top-2 经验 + top-2 记录，分别测试从 0/2000/4000/6000/8000 个模拟患者累积的经验库效果。结论是<strong>经验越多准确率越高</strong>，8000 病例的经验库在 GPT-3.5 和 GPT-4 上都是最好的。这验证了经验库的价值随规模增长。</p></section>
+<p><strong>什么都不用</strong>：基线水平。<strong>只用记录库</strong>：有提升，但有限。<strong>只用经验库</strong>：也有提升，跟单用记录库差不多量级。<strong>两个库都用</strong>：效果最好，93.06%（GPT-4），超越人类专家的约 87%。<br />
+这说明两个库提供的是<strong>不同维度的互补信息</strong>。</p></section>
 <section class="note-section" id="医疗agent验证系统"><h1>医疗agent验证系统</h1><h2>问题：Synthea有 Ground Truth 吗？</h2>
 <p>Synthea 生成的 FHIR Bundle 中包含 CarePlan、MedicationRequest、Procedure 等资源 <a href="https://mitre.github.io/fhir-for-research/modules/synthea-overview">Mitre</a>，这意味着<strong>Synthea 生成的数据本身就包含了"这个患者实际接受了什么治疗"的完整记录</strong>。</p>
 <p>具体来说，Synthea 的疾病模块是状态转移机，支持 MedicationOrder、CarePlanStart、Procedure 等临床状态 <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7651916/">PubMed Central</a>，每个疾病模块按照临床护理路径定义了患者应该接受的治疗。这些模块是基于临床护理协议、CDC/NIH 等机构的公开疾病发生率和流行率统计数据以及临床专家反馈创建的 <a href="https://mitre.github.io/fhir-for-research/modules/synthea-overview">Mitre</a>。所以 Synthea 输出的 CarePlan 和 MedicationRequest <strong>就是根据临床指南和统计数据规则生成的"标准治疗路径"</strong>。</p>
@@ -645,8 +644,8 @@ hr {
 </tr>
 </tbody>
 </table>
-<p><strong>关于 ground truth 的关键理解</strong>：这些 EHR 数据库<strong>没有预定义的"正确治疗方案"</strong>标签。数据里记录的是医生<strong>实际做了什么</strong>（开了什么药、做了什么检查），而不是<strong>应该做什么</strong>。研究者需要根据自己的研究问题来定义评估基准。常见做法包括：</p>
-<p>用<strong>实际临床结局</strong>作为 ground truth（比如死亡率预测：患者是否死亡就是 label）。用<strong>人工标注的 SQL 查询</strong>作为 ground truth（EHRAgent 的做法：人写 gold SQL，agent 的查询结果跟 gold SQL 的结果比对）。用<strong>人类医生编写的任务和答案</strong>作为 ground truth（MedAgentBench 的做法：300个任务由斯坦福医生手写参考答案和验证规则）。</p>
+<p><strong>ground truth </strong>：这些 EHR 数据库<strong>没有预定义的"正确治疗方案"</strong>标签。数据里记录的是医生<strong>实际做了什么</strong>（开了什么药、做了什么检查），而不是<strong>应该做什么</strong>。研究者需要根据自己的研究问题来定义评估基准。常见做法包括：<br />
+用<strong>实际临床结局</strong>作为 ground truth（比如死亡率预测：患者是否死亡就是 label）。用<strong>人工标注的 SQL 查询</strong>作为 ground truth（EHRAgent 的做法：人写 gold SQL，agent 的查询结果跟 gold SQL 的结果比对）。用<strong>人类医生编写的任务和答案</strong>作为 ground truth（MedAgentBench 的做法：300个任务由斯坦福医生手写参考答案和验证规则）。</p>
 <hr />
 <h3>第二类：医学考试/问答数据集（自带标准答案）</h3>
 <p>这类数据集来自标准化考试或医学文献，<strong>天然自带 ground truth</strong>，但它们是<strong>静态选择题</strong>，不涉及与EHR系统的交互。</p>
@@ -732,11 +731,6 @@ hr {
 </tr>
 </tbody>
 </table>
-<hr />
-<h2>对你的项目的核心结论</h2>
-<p>MIMIC 确实是<strong>该领域的黄金标准数据集</strong>，但它的优势在于真实性和社区认可度，<strong>并不自带你需要的那种 ground truth</strong>。对于你的临床决策支持 agent，情况是：</p>
-<p><strong>用 MIMIC 的好处</strong>：审稿人/读者立刻认可数据质量，真实患者数据比合成数据更有说服力。<strong>用 MIMIC 的问题</strong>：它记录的是医生实际行为而不是标准治疗方案，不同医生对同一患者可能有不同的合理决策，所以"实际用药记录"不能直接当成 ground truth（可能有次优决策）。而且需要 CITI 认证和数据使用协议才能访问。</p>
-<p><strong>用 Synthea 的好处</strong>：免费无门槛，可控可重复，自带基于指南的治疗记录作为粗粒度 ground truth，可以任意生成规模。<strong>用 Synthea 的问题</strong>：合成数据，审稿人可能质疑临床真实性。</p>
 <h2>各论文的验证方式对比</h2>
 <p>这几篇核心论文的验证策略可以归纳为四种：</p>
 <hr />
@@ -775,9 +769,7 @@ hr {
 <p>第二，<strong>剂量是固定的</strong>。每种药只有一个剂量（比如二甲双胍只有 500mg），没有滴定逻辑（真实指南是从 500mg 起步逐步加到 2000mg）。</p>
 <p>第三，<strong>缺少监测和检查推荐</strong>。真实指南要求定期查 HbA1c、肾功能、眼底检查等，Synthea 虽然在就诊时会记录 HbA1c，但没有显式地在 CarePlan 里列出推荐的检查项目和频率。</p>
 <p>第四，<strong>不考虑禁忌症和药物交互</strong>。模块里没有"如果 eGFR &lt; 30 不开二甲双胍"这类安全约束，胰岛素的触发条件简化成了只看有没有糖尿病肾病。</p>
-<h2>对你项目的影响</h2>
 <p>Synthea 的输出<strong>可以作为方向性的 ground truth</strong>——评估 agent 有没有在正确的时间开出正确类别的药（比如 severity 2 的患者是不是开了二甲双胍）。但它<strong>不够精细</strong>，没法评估 agent 的个体化决策能力（比如考虑合并症选择不同的二线药）、剂量调整推理、安全性校验（禁忌症检查）这些更有价值的能力。</p>
-<p>所以我的建议是<strong>用 Synthea 作为数据基础，但你需要自己增强 ground truth</strong>。具体做法是：用 Synthea 生成患者数据（诊断、检验值、病史等作为输入），然后针对你选的几个疾病，基于临床指南手写或用 LLM 辅助生成更精细的标准治疗方案作为评估基准。Synthea 模块的 JSON 逻辑可以作为起点，你在它的基础上增加个体化分支、剂量逻辑和安全约束即可。</p>
 <hr />
 <h2>指南规则引擎</h2>
 <p>临床指南规则引擎本质上就是把医学临床实践指南（Clinical Practice Guidelines, CPG）从自然语言文本转化为<strong>可计算的 if-then 规则</strong>，让机器能够自动执行指南推荐。</p>
